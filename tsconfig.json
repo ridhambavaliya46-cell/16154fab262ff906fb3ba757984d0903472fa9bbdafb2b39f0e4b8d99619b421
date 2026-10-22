@@ -1,5 +1,5 @@
 {
-  "compileroptions": {
+  "compilerOptions": {
     "target": "ES2022",
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
