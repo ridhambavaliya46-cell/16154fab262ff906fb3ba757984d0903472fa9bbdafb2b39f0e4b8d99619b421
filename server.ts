@@ -23,7 +23,8 @@ import {
   HSTS_HEADER,
   buildContentSecurityPolicy,
 } from './lib/csp.js';
-import { validateAgainstSource } from './lib/grounding.js';
+import { enforceGrounding } from './lib/grounding.js';
+import { buildResumeHighlights } from './lib/resume-highlight.js';
 import {
   PRO_PRICE_INR,
   buildPaymentMessage,
@@ -35,7 +36,7 @@ import {
 import { taskQueue } from './lib/queue.js';
 import { checkTierRateLimit } from './lib/rate-limiter.js';
 import { checkSharedIpBurstLimit } from './lib/shared-rate-limiter.js';
-import { generateResumeDocx, verifyDocxIntegrity } from './lib/docx-generator.js';
+import { generateResumeDocx, verifyDocxIntegrity, type DocxHighlightSpan } from './lib/docx-generator.js';
 import {
   SESSION_COOKIE,
   issueSession,
@@ -482,10 +483,45 @@ app.post('/api/auth/migrate-guest', async (req: SessionRequest, res: Response) =
 // -----------------------------------------------------------------------------
 
 /** Public, non-secret payment configuration for the paywall UI. */
-app.get('/api/payments/config', (_req: Request, res: Response) => {
+/**
+ * Single source of truth for the Pro price.
+ *
+ * The admin-editable `systemSettings.proPriceInr` wins; the compiled constant
+ * is only the fallback when settings cannot be read. Every server path that
+ * quotes, messages or activates against the price goes through this resolver,
+ * so the config endpoint, the payment message and the activation gate can no
+ * longer disagree — previously the admin field was editable but ignored here,
+ * which meant changing it silently did nothing.
+ */
+async function resolveProPriceInr(): Promise<number> {
+  try {
+    const settings = await db.getSystemSettings();
+    const configured = Number(settings?.proPriceInr);
+    if (Number.isFinite(configured) && configured > 0) return Math.floor(configured);
+  } catch {
+    // A settings outage must never block a payment or a paywall read.
+  }
+  return PRO_PRICE_INR;
+}
+
+app.get('/api/payments/config', async (_req: Request, res: Response) => {
+  // The free-tier limit is admin-configurable, so the client must not hardcode
+  // the denominator next to `monthlyScansUsed`. It is not a secret — it is
+  // advertised on the landing page — so it ships with the public config.
+  // `null` (settings unavailable) makes the client fall back to its default.
+  let freeTierMonthlyLimit: number | null = null;
+  try {
+    const settings = await db.getSystemSettings();
+    if (Number(settings?.freeTierMonthlyLimit) > 0) {
+      freeTierMonthlyLimit = Number(settings.freeTierMonthlyLimit);
+    }
+  } catch {
+    // Fall back to the client default; a settings outage must not break the paywall.
+  }
   res.json({
     success: true,
-    priceInr: PRO_PRICE_INR,
+    priceInr: await resolveProPriceInr(),
+    freeTierMonthlyLimit,
     owner: publicOwnerProfile(),
     activationMode: 'manual',
   });
@@ -534,12 +570,13 @@ app.post('/api/payments/request', async (req: SessionRequest, res: Response) => 
     }
 
     const reference = issuePaymentReference(userId);
+    const priceInr = await resolveProPriceInr();
     const message = buildPaymentMessage(
       {
         userId,
         email: user.email,
         displayName: user.displayName ?? null,
-        priceInr: PRO_PRICE_INR,
+        priceInr,
       },
       reference
     );
@@ -564,7 +601,7 @@ app.post('/api/payments/request', async (req: SessionRequest, res: Response) => 
       telegramUrl: buildTelegramUrl(message),
       message,
       owner: publicOwnerProfile(),
-      priceInr: PRO_PRICE_INR,
+      priceInr,
     });
   } catch (err) {
     console.error('[Payments] upgrade request failed:', err instanceof Error ? err.message : 'unknown error');
@@ -791,7 +828,7 @@ app.post('/api/check', upload.single('resume'), async (req: SessionRequest, res:
         fileName
       );
       resumeText = parsedResume.text;
-    } else if (sample_type && PRESET_RESUMES[sample_type]) {
+    } else if (sample_type && Object.hasOwn(PRESET_RESUMES, sample_type)) {
       resumeText = PRESET_RESUMES[sample_type];
       fileName = `${sample_type}_sample.pdf`;
     } else {
@@ -916,6 +953,10 @@ app.post('/api/check', upload.single('resume'), async (req: SessionRequest, res:
         summary: jobScan.summary,
         created_at: jobScan.createdAt,
       },
+      // The candidate's OWN text, echoed back over their authenticated session
+      // so the browser can render the highlighted preview locally. It is never
+      // rewritten: the highlighter only points at offsets inside this string.
+      resume_text: resumeText,
       analysis: matchAnalysis,
       documentChecks: documentReport,
       backgroundTaskId: backgroundJob?.id ?? null,
@@ -1120,6 +1161,9 @@ app.get('/api/history', async (req: SessionRequest, res: Response) => {
           originalFileName: latestResume.originalFileName,
           createdAt: latestResume.createdAt,
           downloadUrl: latestResume.downloadUrl || null,
+          // The owner's own text so the highlighted preview survives a reload.
+          // Same data the authenticated check endpoint already returns.
+          parsedText: latestResume.parsedText || null,
         }
       : null,
   });
@@ -1134,11 +1178,22 @@ app.get('/api/history', async (req: SessionRequest, res: Response) => {
  * from and invented the rest. Grounding is now explicit: if no source resume
  * can be found, tailoring refuses rather than fabricating.
  */
-async function resolveSourceResumeText(userId: string): Promise<{ text: string; resumeId: string | null }> {
-  // getResumesByUser orders newest first, so this is the document the candidate
-  // most recently scanned.
+async function resolveSourceResumeText(
+  userId: string,
+  scannedAt?: string
+): Promise<{ text: string; resumeId: string | null }> {
+  // Resume rows are created immediately before their scan row. Restricting the
+  // lookup to documents that existed at scan time prevents a later upload from
+  // becoming the source for an older scan's tailoring/export request.
   const resumes = await db.getResumesByUser(userId);
-  const chosen = resumes[0] ?? null;
+  const scanTime = scannedAt ? Date.parse(scannedAt) : Number.NaN;
+  const eligible = Number.isFinite(scanTime)
+    ? resumes.filter((resume) => {
+        const createdAt = Date.parse(resume.createdAt);
+        return Number.isFinite(createdAt) && createdAt <= scanTime;
+      })
+    : resumes;
+  const chosen = eligible[0] ?? null;
   return { text: chosen?.parsedText?.trim() || '', resumeId: chosen?.id ?? null };
 }
 
@@ -1198,7 +1253,7 @@ app.post('/api/tailor', async (req: SessionRequest, res: Response) => {
       });
     }
 
-    const source = await resolveSourceResumeText(scan.userId);
+      const source = await resolveSourceResumeText(scan.userId, scan.createdAt);
     if (!source.text) {
       return res.status(409).json({
         success: false,
@@ -1228,8 +1283,23 @@ app.post('/api/tailor', async (req: SessionRequest, res: Response) => {
         }),
       ]);
 
-      const tailoredText: string = tailorResult.tailored_resume_text || '';
-      const coverLetterText: string = coverLetterResult.cover_letter_text || '';
+      // Grounding is ENFORCED here, not merely reported. Fabricated metrics are
+      // rewritten to [add metric] before anything is persisted or exported, and
+      // a job-required skill the source resume never mentions is flagged as an
+      // unsupported claim. The previous version stored the raw model output and
+      // only attached a note, so invented numbers still reached the DOCX.
+      const groundedTailor = enforceGrounding(
+        tailorResult.tailored_resume_text || '',
+        source.text,
+        scan.jobDescriptionText
+      );
+      const groundedCover = enforceGrounding(
+        coverLetterResult.cover_letter_text || '',
+        source.text,
+        scan.jobDescriptionText
+      );
+      const tailoredText: string = groundedTailor.text;
+      const coverLetterText: string = groundedCover.text;
 
       // Re-score the ACTUAL rewritten text instead of trusting a predicted
       // "improved score" the model made up.
@@ -1250,13 +1320,14 @@ app.post('/api/tailor', async (req: SessionRequest, res: Response) => {
         success: true,
         tailored: {
           ...tailorResult,
+          tailored_resume_text: tailoredText,
           cover_letter_text: coverLetterText,
           cover_letter_synthetic: Boolean(coverLetterResult.synthetic),
           cover_letter_notice: coverLetterResult.notice || null,
         },
         grounding: {
-          resume: validateAgainstSource(tailoredText, source.text),
-          coverLetter: validateAgainstSource(coverLetterText, source.text),
+          resume: groundedTailor.report,
+          coverLetter: groundedCover.report,
         },
         rescan: rescan
           ? {
@@ -1280,7 +1351,7 @@ app.post('/api/tailor', async (req: SessionRequest, res: Response) => {
 app.post('/api/download-docx', async (req: SessionRequest, res: Response) => {
   try {
     if (req.isGuestSession) return res.status(401).json({ success: false, error: 'Sign in before downloading a resume.' });
-    const { check_id } = req.body;
+    const { check_id, include_highlights } = req.body;
     const sessionUserId = req.activeUserId;
     const scan = await db.getJobScan(check_id);
 
@@ -1308,9 +1379,22 @@ app.post('/api/download-docx', async (req: SessionRequest, res: Response) => {
       });
     }
 
-    const source = await resolveSourceResumeText(scan.userId);
+    const source = await resolveSourceResumeText(scan.userId, scan.createdAt);
     const contact = extractContactDetails(source.text);
     const candidateName = extractCandidateName(source.text, resumeContent);
+
+    // Optional recruiter-facing marks. Offsets are computed from the SAME
+    // stored text that is exported, so shading can never shift a character;
+    // when the flag is off the document is byte-for-byte the clean export.
+    let highlights: DocxHighlightSpan[] | undefined;
+    if (include_highlights === true) {
+      const analysis = atsEngine.analyzeMatch(scan.jobDescriptionText || '', resumeContent);
+      highlights = buildResumeHighlights({
+        resumeText: resumeContent,
+        matchedKeywords: analysis.keywordsMatched,
+        missingKeywords: scan.missingKeywords || [],
+      }).highlights.map((h) => ({ start: h.start, end: h.end }));
+    }
 
     const docxBuffer = await generateResumeDocx({
       candidateName,
@@ -1319,6 +1403,7 @@ app.post('/api/download-docx', async (req: SessionRequest, res: Response) => {
       phone: contact.phone,
       linkedin: contact.linkedin,
       tailoredText: resumeContent,
+      highlights,
     });
 
     // Content integrity: re-open the generated file and confirm the text is
@@ -1380,7 +1465,7 @@ app.get('/api/resumes/:id/file', async (req: SessionRequest, res: Response) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader(
     'Content-Disposition',
-    `attachment; filename="${resume.originalFileName.replace(/["\r\n]/g, '')}"`
+    `attachment; filename="${resume.originalFileName.replace(/[^a-zA-Z0-9._-]/g, '_')}"`
   );
   res.send(bytes);
 });
@@ -1675,6 +1760,7 @@ app.post('/api/admin/confirm-payment', async (req: SessionRequest, res: Response
   if (!actorId) return res.status(401).json({ success: false, error: 'Your admin session expired. Sign in again.' });
 
   try {
+    const requiredPriceInr = await resolveProPriceInr();
     const payment = await db.recordManualPayment({
       id: `pay_${crypto.randomUUID()}`,
       userId,
@@ -1682,7 +1768,7 @@ app.post('/api/admin/confirm-payment', async (req: SessionRequest, res: Response
       paymentMethod,
       transactionReference: transactionReference.trim().toUpperCase(),
       paymentRequestReference,
-      requiredAmountInr: PRO_PRICE_INR,
+      requiredAmountInr: requiredPriceInr,
       note: note.trim(),
       recordedBy: actorId,
     });
@@ -1704,8 +1790,11 @@ app.post('/api/admin/confirm-payment', async (req: SessionRequest, res: Response
       payment,
       user,
       totalReceivedInr,
-      requiredAmountInr: PRO_PRICE_INR,
-      proActivated: totalReceivedInr >= PRO_PRICE_INR && user?.currentPlan === 'PRO',
+      requiredAmountInr: requiredPriceInr,
+      // The RPC performs the activation atomically. `user` was read before the
+      // RPC, so checking its stale plan here incorrectly reported false even
+      // when the payment crossed the configured threshold.
+      proActivated: totalReceivedInr >= requiredPriceInr,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : '';

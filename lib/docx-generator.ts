@@ -6,7 +6,18 @@ import {
   AlignmentType,
   Packer,
   BorderStyle,
+  ShadingType,
 } from 'docx';
+
+/** Subtle, print-safe fill for optional highlighted exports. */
+const HIGHLIGHT_FILL = 'FFF2CC';
+
+export interface DocxHighlightSpan {
+  /** Start offset in `tailoredText`. */
+  start: number;
+  /** End offset (exclusive) in `tailoredText`. */
+  end: number;
+}
 
 export interface DocxResumeOptions {
   /**
@@ -19,6 +30,12 @@ export interface DocxResumeOptions {
   phone?: string;
   linkedin?: string;
   tailoredText: string;
+  /**
+   * Optional recruiter-facing highlights, as offsets into `tailoredText`.
+   * Omit them for the default clean export — the characters are identical
+   * either way, only the shading differs.
+   */
+  highlights?: DocxHighlightSpan[];
 }
 
 export interface DocxIntegrityReport {
@@ -103,8 +120,60 @@ export async function generateResumeDocx(options: DocxResumeOptions): Promise<Bu
   const trimmedTitle = (options.jobTitle || '').trim();
   const { tailoredText } = options;
 
-  const lines = tailoredText.split('\n').map(l => l.trim()).filter(Boolean);
+  // Lines keep their absolute offset into `tailoredText` so optional highlight
+  // spans (which are offsets, not line numbers) can be applied without ever
+  // changing a single character of the content.
+  const lines: Array<{ text: string; start: number }> = [];
+  {
+    let cursor = 0;
+    for (const raw of tailoredText.split('\n')) {
+      const trimmed = raw.trim();
+      if (trimmed) {
+        lines.push({ text: trimmed, start: cursor + (raw.length - raw.trimStart().length) });
+      }
+      cursor += raw.length + 1;
+    }
+  }
   const children: Paragraph[] = [];
+
+  /** True for characters covered by an optional highlight span. */
+  const highlightMask = new Uint8Array(tailoredText.length);
+  for (const span of options.highlights || []) {
+    const from = Math.max(0, Math.min(tailoredText.length, span.start));
+    const to = Math.max(from, Math.min(tailoredText.length, span.end));
+    for (let i = from; i < to; i++) highlightMask[i] = 1;
+  }
+
+  /**
+   * Splits one line into runs, shading only the highlighted ranges. The
+   * concatenated run text always equals `lineText` exactly.
+   */
+  const buildRuns = (
+    lineText: string,
+    lineStart: number,
+    base: { bold?: boolean; size: number; color: string }
+  ): TextRun[] => {
+    const runs: TextRun[] = [];
+    let i = 0;
+    while (i < lineText.length) {
+      const marked = highlightMask[lineStart + i] === 1;
+      let j = i + 1;
+      while (j < lineText.length && (highlightMask[lineStart + j] === 1) === marked) j++;
+      const slice = lineText.slice(i, j);
+      runs.push(
+        new TextRun({
+          text: slice,
+          bold: base.bold,
+          size: base.size,
+          font: 'Calibri',
+          color: base.color,
+          ...(marked ? { shading: { type: ShadingType.SOLID, color: 'auto', fill: HIGHLIGHT_FILL } } : {}),
+        })
+      );
+      i = j;
+    }
+    return runs;
+  };
 
   // Top header: Name. Omitted entirely when no real name is known — printing
   // "CANDIDATE NAME" into a document a candidate submits is a defect.
@@ -165,7 +234,9 @@ export async function generateResumeDocx(options: DocxResumeOptions): Promise<Bu
   }
 
   // Parse lines into sections
-  for (const line of lines) {
+  for (const lineEntry of lines) {
+    const line = lineEntry.text;
+    const lineStart = lineEntry.start;
     const isMajorHeading =
       /^(PROFESSIONAL SUMMARY|CORE COMPETENCIES|TECHNICAL SKILLS|PROFESSIONAL EXPERIENCE|WORK EXPERIENCE|EDUCATION|PROJECTS|CERTIFICATIONS|ACHIEVEMENTS)/i.test(
         line
@@ -199,18 +270,15 @@ export async function generateResumeDocx(options: DocxResumeOptions): Promise<Bu
       );
     } else if (isBullet) {
       const cleanBullet = line.replace(/^[-•*]\s*/, '');
+      const bulletOffset = line.length - cleanBullet.length;
       children.push(
         new Paragraph({
           bullet: { level: 0 },
           spacing: { before: 60, after: 60 },
-          children: [
-            new TextRun({
-              text: cleanBullet,
-              size: 21, // 10.5pt
-              font: 'Calibri',
-              color: '2D3748',
-            }),
-          ],
+          children: buildRuns(cleanBullet, lineStart + bulletOffset, {
+            size: 21, // 10.5pt
+            color: '2D3748',
+          }),
         })
       );
     } else {
@@ -219,15 +287,11 @@ export async function generateResumeDocx(options: DocxResumeOptions): Promise<Bu
       children.push(
         new Paragraph({
           spacing: { before: isRoleOrCompany ? 140 : 80, after: 60 },
-          children: [
-            new TextRun({
-              text: line,
-              bold: isRoleOrCompany,
-              size: 21,
-              font: 'Calibri',
-              color: isRoleOrCompany ? '1A202C' : '4A5568',
-            }),
-          ],
+          children: buildRuns(line, lineStart, {
+            bold: isRoleOrCompany,
+            size: 21,
+            color: isRoleOrCompany ? '1A202C' : '4A5568',
+          }),
         })
       );
     }

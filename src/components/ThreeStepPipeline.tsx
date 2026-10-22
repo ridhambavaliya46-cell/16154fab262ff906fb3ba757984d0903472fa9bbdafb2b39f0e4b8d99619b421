@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Target, CheckCheck, ArrowRight, Sparkles } from 'lucide-react';
+import { FileText, Target, CheckCheck, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 interface ThreeStepPipelineProps {
   onScanClick: () => void;
@@ -17,7 +17,7 @@ const STEPS: StepItem[] = [
   {
     number: '01',
     icon: FileText,
-    title: 'Upload Resume & Paste Job',
+    title: 'Bring your resume and job description',
     description:
       'Upload your current PDF or DOCX file and paste any job listing from Workday, Greenhouse, or Lever.',
     actionHint: 'Supports PDF & DOCX up to 5MB',
@@ -25,18 +25,18 @@ const STEPS: StepItem[] = [
   {
     number: '02',
     icon: Target,
-    title: 'Analyze Score & Keyword Gaps',
+    title: 'See what lines up',
     description:
-      'Review your exact match score, missing technical competencies, hard skills, and structural recruiter rubrics.',
-    actionHint: 'Deterministic token analysis',
+      'Review the overlap, the missing requirements, and the parts worth checking against your real experience.',
+    actionHint: 'Clear, document-based feedback',
   },
   {
     number: '03',
     icon: CheckCheck,
-    title: 'Export Tailored Word Document',
+    title: 'Prepare a version you can stand behind',
     description:
-      'Download a single-column, table-free Word file built only from your own resume, with an action-first bullet structure.',
-    actionHint: 'Single-column, table-free .DOCX',
+      'Download an editable Word draft built from your original resume. Read it once, make it yours, then send it.',
+    actionHint: 'Editable single-column .DOCX',
   },
 ];
 
@@ -47,19 +47,19 @@ export const ThreeStepPipeline: React.FC<ThreeStepPipelineProps> = ({ onScanClic
         {/* Section Header */}
         <div className="max-w-2xl mb-12 sm:mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1 surface-panel rounded-full mb-3">
-            <Sparkles className="w-3.5 h-3.5 text-[#1D4ED8]" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#2E765B]" />
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#1D4ED8]">
-              Algorithmic Workflow
+              A simple, honest process
             </span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#0B2545] tracking-tight">
-            Three Steps To{' '}
+            Three steps to{' '}
             <span className="text-blue-core">
-              Interview Readiness
+              a clearer application
             </span>
           </h2>
           <p className="mt-3 text-base sm:text-lg text-[#334E68] leading-relaxed">
-            A deterministic pipeline from raw document ingestion to a Word file you can send.
+            Start with the documents you already have. Leave with a clearer view of what to keep, change, and verify.
           </p>
         </div>
 

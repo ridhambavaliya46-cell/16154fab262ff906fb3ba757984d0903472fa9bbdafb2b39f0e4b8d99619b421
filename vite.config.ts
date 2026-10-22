@@ -26,7 +26,6 @@ export default defineConfig(() => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('firebase')) return 'vendor-firebase';
               if (id.includes('lucide-react') || id.includes('@hugeicons')) return 'vendor-icons';
               if (id.includes('motion')) return 'vendor-motion';
               return 'vendor';

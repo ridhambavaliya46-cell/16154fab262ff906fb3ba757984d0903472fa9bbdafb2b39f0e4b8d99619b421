@@ -310,6 +310,65 @@
     inset 0 1px 0 rgb(255 255 255 / 95%);
 }
 
+/*
+ * Public-site surfaces intentionally stay opaque and quiet. A resume tool
+ * should feel dependable and legible, not like a showcase of gradients and
+ * translucent layers. These scoped rules let the existing landing components
+ * keep their layout while bringing their surfaces into one editorial system.
+ */
+.landing-page .glass-panel,
+.landing-page .surface-panel,
+.landing-page .surface-panel-strong,
+.landing-page .landing-card {
+  background: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-color: #dfe5e0 !important;
+  box-shadow: 0 16px 34px -28px rgb(23 59 54 / 38%), 0 1px 0 rgb(255 255 255 / 90%) inset !important;
+}
+
+.landing-page [class*='backdrop-blur'] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.landing-page [class*='bg-gradient-to-br'] {
+  background-image: none !important;
+  background-color: #e4eee7 !important;
+}
+
+.landing-page [class*='bg-gradient-to-r'] {
+  background-image: none !important;
+  background-color: #2e765b !important;
+}
+
+.landing-page [class*='bg-gradient-to-b'] {
+  background-image: none !important;
+  background-color: #fcfcf9 !important;
+}
+
+.landing-page .text-blue-core,
+.landing-page .text-blue-mid,
+.landing-page .text-blue-deep {
+  color: #2e765b !important;
+}
+
+.landing-page .bg-blue-wash {
+  background-color: #e4eee7 !important;
+}
+
+.landing-page .border-blue-pale {
+  border-color: #c9d8cf !important;
+}
+
+.landing-page .landing-pro-glow {
+  opacity: 0.45;
+}
+
+.landing-page footer {
+  background-image: none !important;
+}
+
 /* Hairline separator that matches the border tokens. */
 .rule-subtle {
   border-color: var(--color-border-subtle);

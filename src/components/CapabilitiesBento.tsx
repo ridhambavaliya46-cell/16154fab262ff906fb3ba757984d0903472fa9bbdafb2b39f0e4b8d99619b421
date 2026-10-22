@@ -52,7 +52,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
     }
   };
 
-  // Card 2: AI-Tailored Resume bullet state
+  // Card 2: reviewable resume edit state
   const [bulletMode, setBulletMode] = useState<'raw' | 'tailored'>('tailored');
 
   // Card 3: Cover Letter tone state
@@ -111,18 +111,18 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 backdrop-blur-xl border border-white/80 shadow-xs mb-3">
             <HugeiconsIcon icon={FilterIcon} size={14} className="text-[#1D4ED8]" />
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#1D4ED8]">
-              Precision Toolkit
+              Practical tools
             </span>
           </div>
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#0B2545] tracking-tight">
-            Engineered For{' '}
-            <span className="bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#60A5FA] bg-clip-text text-transparent">
-              Recruiter Conversion
+            A workspace for{' '}
+            <span className="text-[#2E765B]">
+              better decisions
             </span>
           </h2>
           <p className="mt-2 text-sm sm:text-base text-[#334E68]">
-            Visual diagnostics that identify keyword gaps and align your profile with hiring rubrics.
+            Understand the role, keep your claims accurate, and make each application easier to review.
           </p>
         </div>
 
@@ -131,7 +131,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
           {/* ==============================================================
               FEATURE 1: GAP FINDER (SPANS 7 COLS)
              ============================================================== */}
-          <div className="md:col-span-7 rounded-3xl p-6 sm:p-8 bg-white/45 backdrop-blur-2xl border border-white/70 shadow-[0_20px_50px_-10px_rgba(11,37,69,0.12),inset_0_1px_0_rgba(255,255,255,0.95)] hover:shadow-[0_28px_60px_-10px_rgba(29,78,216,0.22)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+          <div className="landing-card md:col-span-7 rounded-3xl p-6 sm:p-8 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
             <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white to-transparent" />
 
             <div>
@@ -144,7 +144,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-[#0B2545]">Gap Finder</h3>
-                    <p className="text-[11px] text-[#627D98]">Token deficit detection</p>
+                    <p className="text-[11px] text-[#627D98]">Relevant gaps</p>
                   </div>
                 </div>
 
@@ -198,7 +198,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
                     Illustrative keyword coverage
                   </span>
                   <span className="font-mono font-bold text-blue-core">
-                    {currentScore >= 80 ? 'Demo only — not an ATS prediction' : 'Demo only — not an ATS prediction'}
+                    Demo only — not an ATS prediction
                   </span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-line overflow-hidden">
@@ -215,7 +215,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
             </div>
 
             <div className="pt-4 mt-5 border-t border-surface/80 flex items-center justify-between text-xs text-[#627D98]">
-              <span>Numbers come from the real engine on your own documents</span>
+                  <span>Demo only — your score uses your own documents</span>
               <button
                 onClick={onScanClick}
                 className="font-bold text-[#1D4ED8] hover:text-blue-core flex items-center gap-1 cursor-pointer"
@@ -227,9 +227,9 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
           </div>
 
           {/* ==============================================================
-              FEATURE 2: AI-TAILORED RESUME (SPANS 5 COLS)
+              FEATURE 2: REVIEWABLE RESUME EDITS (SPANS 5 COLS)
              ============================================================== */}
-          <div className="md:col-span-5 rounded-3xl p-6 sm:p-8 bg-white/45 backdrop-blur-2xl border border-white/70 shadow-[0_20px_50px_-10px_rgba(11,37,69,0.12),inset_0_1px_0_rgba(255,255,255,0.95)] hover:shadow-[0_28px_60px_-10px_rgba(29,78,216,0.22)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+          <div className="landing-card md:col-span-5 rounded-3xl p-6 sm:p-8 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
             <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white to-transparent" />
 
             <div>
@@ -295,7 +295,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
               <div className="grid grid-cols-2 gap-2 text-[10px] font-semibold text-[#0B2545]">
                 <div className="p-2 rounded-xl bg-white/80 border border-line/80 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-bright" />
-                  <span>STAR Verified</span>
+                  <span>Review the source</span>
                 </div>
                 <div className="p-2 rounded-xl bg-white/80 border border-line/80 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#1D4ED8]" />
@@ -315,7 +315,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
           {/* ==============================================================
               FEATURE 3: COVER LETTER (SPANS 5 COLS)
              ============================================================== */}
-          <div className="md:col-span-5 rounded-3xl p-6 sm:p-8 bg-white/45 backdrop-blur-2xl border border-white/70 shadow-[0_20px_50px_-10px_rgba(11,37,69,0.12),inset_0_1px_0_rgba(255,255,255,0.95)] hover:shadow-[0_28px_60px_-10px_rgba(29,78,216,0.22)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+          <div className="landing-card md:col-span-5 rounded-3xl p-6 sm:p-8 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
             <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white to-transparent" />
 
             <div>
@@ -333,7 +333,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
                 </div>
 
                 <span className="text-[10px] font-mono font-bold text-[#1D4ED8] bg-[#1D4ED8]/10 px-2 py-0.5 rounded-full border border-[#1D4ED8]/25">
-                  1-Click
+                  Draft for review
                 </span>
               </div>
 
@@ -357,7 +357,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
               {/* Dynamic Cover Letter Snippet */}
               <div className="p-3.5 rounded-2xl bg-white/70 border border-[#8DA9C4]/30 mb-3 shadow-inner">
                 <span className="text-[9px] uppercase font-bold text-[#627D98] block mb-1">
-                  Generated Opening Hook:
+                  Opening direction:
                 </span>
                 <p className="text-[11px] sm:text-xs text-[#334E68] italic leading-relaxed">
                   "{toneSnippets[letterTone]}"
@@ -366,7 +366,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
 
               <div className="flex items-center gap-2 text-[10px] text-blue-deep font-semibold bg-blue-wash/80 p-2 rounded-xl border border-blue-pale">
                 <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} className="text-blue-mid shrink-0" />
-                <span>Synchronized with resume bullet metrics</span>
+                  <span>Check every line against your resume</span>
               </div>
             </div>
 
@@ -379,7 +379,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
           {/* ==============================================================
               FEATURE 4: APPLICATION TRACKER (SPANS 7 COLS)
              ============================================================== */}
-          <div className="md:col-span-7 rounded-3xl p-6 sm:p-8 bg-white/45 backdrop-blur-2xl border border-white/70 shadow-[0_20px_50px_-10px_rgba(11,37,69,0.12),inset_0_1px_0_rgba(255,255,255,0.95)] hover:shadow-[0_28px_60px_-10px_rgba(29,78,216,0.22)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+          <div className="landing-card md:col-span-7 rounded-3xl p-6 sm:p-8 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
             <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white to-transparent" />
 
             <div>
@@ -392,7 +392,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-[#0B2545]">Application Tracker</h3>
-                    <p className="text-[11px] text-[#627D98]">Pipeline & conversion stats</p>
+                    <p className="text-[11px] text-[#627D98]">Example tracker · keep applications moving</p>
                   </div>
                 </div>
 
@@ -449,7 +449,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
             </div>
 
             <div className="pt-4 mt-5 border-t border-surface/80 flex items-center justify-between text-xs text-[#627D98]">
-              <span>Real-time ATS screening radar</span>
+              <span>Your application list at a glance</span>
               <button
                 onClick={onScanClick}
                 className="font-bold text-[#1D4ED8] hover:text-blue-core flex items-center gap-1 cursor-pointer"

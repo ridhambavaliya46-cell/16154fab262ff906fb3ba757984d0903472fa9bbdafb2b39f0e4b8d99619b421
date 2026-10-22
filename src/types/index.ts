@@ -5,6 +5,8 @@ export interface User {
   photoURL?: string | null;
   plan: 'free' | 'pro';
   credits_remaining: number;
+  /** Admin-configured free-tier monthly scan limit this credit count was computed against. */
+  scanLimit?: number;
   isAnonymous?: boolean;
   isAdmin?: boolean;
   role?: 'OWNER' | 'ADMIN' | 'USER';
@@ -178,7 +180,13 @@ export interface ScoreBreakdown {
 
 export interface GroundingFinding {
   id: string;
-  kind: 'fabricated_metric' | 'unsupported_credential' | 'unsupported_employer' | 'source_unavailable';
+  kind:
+    | 'fabricated_metric'
+    | 'unsupported_credential'
+    | 'unsupported_employer'
+    | 'unsupported_skill'
+    | 'unsupported_date'
+    | 'source_unavailable';
   severity: 'high' | 'medium';
   excerpt: string;
   explanation: string;

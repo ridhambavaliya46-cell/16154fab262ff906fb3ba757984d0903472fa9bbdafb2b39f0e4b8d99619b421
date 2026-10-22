@@ -39,12 +39,12 @@ export const Logo: React.FC<LogoProps> = ({
         }
       }}
     >
-      {/* 3D Elevated Single-Color Brand Emblem (Resume Bridge Mark) */}
+      {/* Simple, durable mark that stays legible at every size. */}
       <div
         className={`relative flex items-center justify-center shrink-0 rounded-xl transition-all duration-200 ${
           isDark
-            ? 'bg-[#0B2545] border border-white/20 shadow-[0_4px_12px_rgba(0,0,0,0.3)]'
-            : 'bg-gradient-to-b from-[#0B2545] to-[#081B33] border border-[#1D4ED8]/30 shadow-[0_6px_16px_rgba(11,37,69,0.25),inset_0_1px_0_rgba(255,255,255,0.25)] group-hover:shadow-[0_8px_20px_rgba(29,78,216,0.35)] group-hover:border-[#1D4ED8]/50'
+            ? 'bg-[#173B36] border border-white/20 shadow-[0_4px_12px_rgba(0,0,0,0.18)]'
+            : 'bg-[#173B36] border border-[#173B36] shadow-[0_4px_12px_rgba(23,59,54,0.18)] group-hover:bg-[#24584F]'
         }`}
         style={{ width: iconDimensions.container, height: iconDimensions.container }}
         aria-hidden="true"

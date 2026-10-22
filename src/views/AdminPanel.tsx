@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   ShieldCheck,
   Users,
@@ -23,7 +23,9 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.js';
+import { useDialogA11y } from '../hooks/useDialogA11y.js';
 import { hasAdminPrivileges, isOwnerEmail, FREE_SCAN_LIMIT, PRO_PRICE_INR } from '../config.js';
+import { ConfirmPromptDialog } from '../components/ConfirmPromptDialog.js';
 
 interface AdminUser {
   id: string;
@@ -127,6 +129,15 @@ interface AdminPanelProps {
   onBackToWorkspace: () => void;
 }
 
+/**
+ * Tasks the server actually dispatches through `runModel` (only `tailor` in
+ * server.ts and `tailor`/`cover_letter` in lib/queue.ts). The registry also
+ * stores `score`, `star_bullet` and `resume_parse` bindings so a future LLM
+ * path can adopt them, but scoring, parsing and STAR suggestions are computed
+ * deterministically today and never call a model.
+ */
+const RUNTIME_LIVE_TASKS = new Set(['tailor', 'cover_letter']);
+
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<
@@ -144,6 +155,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
   const [copiedUserId, setCopiedUserId] = useState<string | null>(null);
   const [confirmingPaymentRequest, setConfirmingPaymentRequest] = useState<string | null>(null);
   const [paymentDraft, setPaymentDraft] = useState({ amountInr: String(PRO_PRICE_INR), method: 'upi', transactionReference: '', note: '' });
+
+  /**
+   * Replaces window.prompt / window.confirm. Those native dialogs cannot be
+   * styled, escape the app's focus-trap contract, and are blocked outright in
+   * some embedded browsers — where a blocked prompt used to be coerced into a
+   * default ban reason instead of aborting.
+   */
+  const [adminDialog, setAdminDialog] = useState<
+    | { kind: 'ban'; userId: string; email: string }
+    | { kind: 'deleteUser'; userId: string; email: string }
+    | { kind: 'deleteLlm'; llmId: string; name: string }
+    | null
+  >(null);
   const [paymentSaving, setPaymentSaving] = useState(false);
 
   // UI State
@@ -209,10 +233,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
   // from client-supplied headers or an email string comparison.
   const isOwnerOrAdmin = hasAdminPrivileges(user);
 
+  // Timer kept in a ref: a second toast clears the first timer instead of
+  // stacking, and the timer never outlives the component.
+  const toastTimerRef = useRef<number | undefined>(undefined);
   const showToast = (msg: string) => {
     setFeedbackMessage(msg);
-    setTimeout(() => setFeedbackMessage(null), 3500);
+    if (toastTimerRef.current !== undefined) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => setFeedbackMessage(null), 3500);
   };
+
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current !== undefined) clearTimeout(toastTimerRef.current);
+    },
+    []
+  );
+
+  // Focus trap + Escape for both admin dialogs, matching every other dialog in
+  // the app. Without these, keyboard users tab into the inert page behind the
+  // overlay.
+  const editUserModalRef = useDialogA11y(!!editingUser, () => setEditingUser(null));
+  const addLlmModalRef = useDialogA11y<HTMLFormElement>(showAddLLMModal, () => setShowAddLLMModal(false));
 
   // Authorization travels in the httpOnly session cookie the browser already
   // sends. Sending identity headers (previously defaulting to the owner) made
@@ -328,9 +369,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
         );
         showToast(`Plan updated for ${data.user.email} -> ${data.user.currentPlan}`);
         fetchAdminData();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error || `Could not update plan (HTTP ${res.status}).`);
       }
     } catch (err) {
       console.error(err);
+      showToast('Could not update plan. Network error.');
     } finally {
       setActionLoading(null);
     }
@@ -383,19 +428,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
         );
         showToast(`User ${data.user.email} is now ${data.user.isAdmin ? 'an Administrator' : 'a Candidate'}`);
         fetchAdminData();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error || `Could not change role (HTTP ${res.status}).`);
       }
     } catch (err) {
       console.error(err);
+      showToast('Could not change role. Network error.');
     } finally {
       setActionLoading(null);
     }
   };
 
-  const handleToggleBan = async (targetUserId: string, currentlyBanned: boolean) => {
+  const handleToggleBan = (targetUserId: string, currentlyBanned: boolean, targetEmail: string) => {
+    // Reinstating needs no reason; suspending collects one in the dialog.
+    if (currentlyBanned) {
+      void performToggleBan(targetUserId, true, '');
+      return;
+    }
+    setAdminDialog({ kind: 'ban', userId: targetUserId, email: targetEmail });
+  };
+
+  const performToggleBan = async (targetUserId: string, currentlyBanned: boolean, reason: string) => {
     setActionLoading(`ban-${targetUserId}`);
-    const reason = !currentlyBanned
-      ? prompt('Enter suspension / ban reason:', 'Automated security policy flag') || 'Policy violation'
-      : '';
     try {
       const res = await fetch('/api/admin/ban-user', {
         method: 'POST',
@@ -411,7 +466,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
         fetchAdminData();
       } else {
         const err = await res.json();
-        alert(err.error || 'Failed to update ban status');
+        showToast(err.error || 'Failed to update ban status');
       }
     } catch (err) {
       console.error(err);
@@ -420,7 +475,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
     }
   };
 
-  const handleAddCredits = async (targetUserId: string, count: number = 3) => {
+  const handleAddCredits = async (targetUserId: string, count: number = FREE_SCAN_LIMIT) => {
     setActionLoading(`credits-${targetUserId}`);
     try {
       const res = await fetch('/api/admin/add-credits', {
@@ -434,18 +489,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
           prev.map((u) => (u.id === targetUserId ? { ...u, monthlyScansUsed: data.user.monthlyScansUsed } : u))
         );
         showToast(`Added ${count} scan credits to ${data.user.email}`);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error || `Could not add credits (HTTP ${res.status}).`);
       }
     } catch (err) {
       console.error(err);
+      showToast('Could not add credits. Network error.');
     } finally {
       setActionLoading(null);
     }
   };
 
-  const handleDeleteUser = async (targetUserId: string, targetEmail: string) => {
-    if (!confirm(`Are you sure you want to permanently delete user ${targetEmail}? All scans and resumes will be wiped.`)) {
-      return;
-    }
+  const handleDeleteUser = (targetUserId: string, targetEmail: string) => {
+    setAdminDialog({ kind: 'deleteUser', userId: targetUserId, email: targetEmail });
+  };
+
+  const performDeleteUser = async (targetUserId: string, targetEmail: string) => {
     setActionLoading(`del-${targetUserId}`);
     try {
       const res = await fetch('/api/admin/delete-user', {
@@ -457,9 +517,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
         setUsers((prev) => prev.filter((u) => u.id !== targetUserId));
         showToast(`User ${targetEmail} removed.`);
         fetchAdminData();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error || `Could not delete user (HTTP ${res.status}).`);
       }
     } catch (err) {
       console.error(err);
+      showToast('Could not delete user. Network error.');
     } finally {
       setActionLoading(null);
     }
@@ -505,7 +569,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
         fetchAdminData();
       } else {
         const d = await res.json();
-        alert(d.error || 'Failed to update user');
+        showToast(d.error || 'Failed to update user');
       }
     } catch (err) {
       console.error(err);
@@ -530,9 +594,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
         const data = await res.json();
         setBindings((prev) => ({ ...prev, [task]: data.binding }));
         showToast(`Task binding updated: ${data.binding.taskLabel}`);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error || `Could not save binding (HTTP ${res.status}).`);
       }
     } catch (err) {
       console.error(err);
+      showToast('Could not save binding. Network error.');
     } finally {
       setActionLoading(null);
     }
@@ -550,9 +618,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
         const data = await res.json();
         setLlms((prev) => prev.map((item) => (item.id === llmId ? data.llm : item)));
         showToast(`LLM ${data.llm.name} ${data.llm.enabled ? 'Enabled' : 'Disabled'}`);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error || `Could not update LLM (HTTP ${res.status}).`);
       }
     } catch (err) {
       console.error(err);
+      showToast('Could not update LLM. Network error.');
     } finally {
       setActionLoading(null);
     }
@@ -580,16 +652,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
           latencyTier: 'standard',
         });
         showToast(`New LLM registered: ${data.llm.name}`);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error || `Could not register LLM (HTTP ${res.status}).`);
       }
     } catch (err) {
       console.error(err);
+      showToast('Could not register LLM. Network error.');
     } finally {
       setActionLoading(null);
     }
   };
 
-  const handleDeleteLLM = async (llmId: string, name: string) => {
-    if (!confirm(`Delete LLM provider config: ${name}?`)) return;
+  const handleDeleteLLM = (llmId: string, name: string) => {
+    setAdminDialog({ kind: 'deleteLlm', llmId, name });
+  };
+
+  const performDeleteLLM = async (llmId: string, name: string) => {
     setActionLoading(`del-llm-${llmId}`);
     try {
       const res = await fetch(`/api/admin/llms/${llmId}`, {
@@ -599,9 +678,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
       if (res.ok) {
         setLlms((prev) => prev.filter((item) => item.id !== llmId));
         showToast(`Removed LLM: ${name}`);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error || `Could not remove LLM (HTTP ${res.status}).`);
       }
     } catch (err) {
       console.error(err);
+      showToast('Could not remove LLM. Network error.');
     } finally {
       setActionLoading(null);
     }
@@ -612,14 +695,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
   // ==========================================
 
   // `!currentVal` coerced every numeric setting to `false`, so the limit/price
-    // inputs POSTed a boolean and silently never persisted. Invert booleans
-    // only, and pass anything else through unchanged.
-    const handleToggleSetting = async (key: keyof SystemSettings, currentVal: unknown) => {
-      if (!settings) return;
-      setActionLoading(`set-${key}`);
-      const updated: Record<string, unknown> = {
-        [key]: typeof currentVal === 'boolean' ? !currentVal : currentVal,
-      };
+  // inputs POSTed a boolean and silently never persisted. Invert booleans
+  // only, and pass anything else through unchanged.
+  const handleToggleSetting = async (key: keyof SystemSettings, currentVal: unknown) => {
+    if (!settings) return;
+    setActionLoading(`set-${key}`);
+    const updated: Record<string, unknown> = {
+      [key]: typeof currentVal === 'boolean' ? !currentVal : currentVal,
+    };
     try {
       const res = await fetch('/api/admin/settings', {
         method: 'POST',
@@ -630,9 +713,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
         const d = await res.json();
         setSettings(d.settings);
         showToast(`Setting '${key}' updated`);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error || `Could not update '${key}' (HTTP ${res.status}).`);
       }
     } catch (err) {
       console.error(err);
+      showToast(`Could not update '${key}'. Network error.`);
     } finally {
       setActionLoading(null);
     }
@@ -903,7 +990,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
             {/* Card 4: Average keyword overlap */}
             <div className="p-5 rounded-2xl bg-white/80 backdrop-blur-xl border border-line/80 shadow-[0_8px_24px_rgba(11,37,69,0.04)] space-y-1">
               <div className="flex items-center justify-between text-[#627D98]">
-                <span className="text-[11px] font-bold uppercase tracking-wider">Avg Keyword Match</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider">Avg ATS Score</span>
                 <Zap className="w-4 h-4 text-[#1D4ED8]" />
               </div>
               <div className="text-2xl sm:text-3xl font-extrabold text-[#0B2545] font-['Space_Grotesk']">
@@ -911,7 +998,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
               </div>
               <div className="text-[11px] text-[#334E68]">
                 {stats
-                  ? `Across ${stats.totalScansPerformed} candidate scans`
+                  ? `Blended coverage + vocabulary, across ${stats.totalScansPerformed} scans`
                   : 'Stats endpoint did not respond'}
               </div>
             </div>
@@ -1127,7 +1214,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
                         <td className="py-3.5 px-3 font-mono font-semibold text-[#0B2545]">
                           {u.currentPlan === 'PRO'
                             ? 'Unlimited'
-                            : `${u.monthlyScansUsed}/${settings?.freeTierMonthlyLimit || FREE_SCAN_LIMIT}`}
+                            : `${u.monthlyScansUsed}/${settings?.freeTierMonthlyLimit ?? FREE_SCAN_LIMIT}`}
                         </td>
 
                         <td className="py-3.5 px-3 text-[#334E68] text-[11px]">
@@ -1172,7 +1259,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
                             {/* Ban / Unban */}
                             {!isOwner && (
                               <button
-                                onClick={() => handleToggleBan(u.id, !!u.isBanned)}
+                                onClick={() => handleToggleBan(u.id, !!u.isBanned, u.email)}
                                 disabled={actionLoading === `ban-${u.id}`}
                                 className={`p-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
                                   u.isBanned
@@ -1185,13 +1272,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
                               </button>
                             )}
 
-                            {/* Add +3 Credits */}
+                            {/* Add scan credits */}
                             {u.currentPlan !== 'PRO' && (
                               <button
-                                onClick={() => handleAddCredits(u.id, 3)}
+                                onClick={() => handleAddCredits(u.id)}
                                 disabled={actionLoading === `credits-${u.id}`}
                                 className="p-1.5 rounded-lg text-[10px] font-bold bg-surface text-[#0B2545] hover:bg-line cursor-pointer"
-                                title="Add 3 scan credits"
+                                title={`Add ${FREE_SCAN_LIMIT} scan credits`}
                               >
                                 <Plus className="w-3.5 h-3.5" />
                               </button>
@@ -1242,6 +1329,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
               </h2>
               <p className="text-xs text-[#627D98]">
                 Bind supported models to tasks. A server-side provider key is required before a model can run.
+                Only tasks marked <span className="font-semibold">Live</span> are dispatched at runtime;
+                <span className="font-semibold"> Reserved</span> bindings are stored for a future model path
+                (scoring, parsing and STAR suggestions are computed deterministically today).
               </p>
             </div>
 
@@ -1269,9 +1359,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.entries(bindings).map(([taskKey, binding]) => (
                 <div key={taskKey} className="p-4 rounded-xl bg-canvas/80 border border-line/80 space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="font-bold text-[#0B2545] text-xs">{binding.taskLabel}</span>
-                    <span className="font-mono text-[10px] text-[#627D98] uppercase">{taskKey}</span>
+                    <span className="flex items-center gap-1.5">
+                      <span
+                        className={
+                          RUNTIME_LIVE_TASKS.has(taskKey)
+                            ? 'px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-success/15 text-success border border-success/30'
+                            : 'px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-surface text-[#627D98] border border-line'
+                        }
+                        title={
+                          RUNTIME_LIVE_TASKS.has(taskKey)
+                            ? 'Invoked by the server when a job is tailored'
+                            : 'Stored in the registry but never invoked at runtime'
+                        }
+                      >
+                        {RUNTIME_LIVE_TASKS.has(taskKey) ? 'Live' : 'Reserved'}
+                      </span>
+                      <span className="font-mono text-[10px] text-[#627D98] uppercase">{taskKey}</span>
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs">
@@ -1515,7 +1621,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
                         type="button"
                         onClick={() => {
                           setConfirmingPaymentRequest(confirmingPaymentRequest === request.id ? null : request.id);
-                          setPaymentDraft({ amountInr: String(PRO_PRICE_INR), method: 'upi', transactionReference: '', note: '' });
+                          setPaymentDraft({
+                            amountInr: String(settings?.proPriceInr ?? PRO_PRICE_INR),
+                            method: 'upi',
+                            transactionReference: '',
+                            note: '',
+                          });
                         }}
                         className="shrink-0 rounded-lg bg-[#0B2545] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white transition-colors hover:bg-blue-core cursor-pointer"
                       >
@@ -1771,20 +1882,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-4 rounded-xl bg-canvas border border-line space-y-2">
-              <label className="text-xs font-bold text-[#0B2545] block">
+              <label htmlFor="admin-free-tier-limit" className="text-xs font-bold text-[#0B2545] block">
                 Free Tier Monthly Scan Limit
               </label>
               <div className="flex items-center gap-2">
                 <input
+                  id="admin-free-tier-limit"
                   type="number"
-                  value={settings?.freeTierMonthlyLimit || FREE_SCAN_LIMIT}
+                  min={0}
+                  value={settings?.freeTierMonthlyLimit ?? FREE_SCAN_LIMIT}
                   onChange={(e) =>
                     setSettings((prev) => prev ? { ...prev, freeTierMonthlyLimit: Number(e.target.value) } : prev)
                   }
                   className="w-24 p-2 rounded-lg border border-line-strong bg-white font-mono text-xs font-bold"
                 />
                 <button
-                  onClick={() => handleToggleSetting('freeTierMonthlyLimit' as any, (settings?.freeTierMonthlyLimit || FREE_SCAN_LIMIT) - 1)}
+                  type="button"
+                  onClick={() =>
+                    handleToggleSetting('freeTierMonthlyLimit', settings?.freeTierMonthlyLimit ?? FREE_SCAN_LIMIT)
+                  }
                   className="px-3 py-1.5 rounded-lg bg-[#0B2545] text-white text-xs font-bold cursor-pointer"
                 >
                   Save Limit
@@ -1796,20 +1912,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
             </div>
 
             <div className="p-4 rounded-xl bg-canvas border border-line space-y-2">
-              <label className="text-xs font-bold text-[#0B2545] block">
+              <label htmlFor="admin-pro-price" className="text-xs font-bold text-[#0B2545] block">
                 Pro Monthly Price (INR)
               </label>
               <div className="flex items-center gap-2">
                 <input
+                  id="admin-pro-price"
                   type="number"
-                  value={settings?.proPriceInr || PRO_PRICE_INR}
+                  min={0}
+                  value={settings?.proPriceInr ?? PRO_PRICE_INR}
                   onChange={(e) =>
                     setSettings((prev) => prev ? { ...prev, proPriceInr: Number(e.target.value) } : prev)
                   }
                   className="w-24 p-2 rounded-lg border border-line-strong bg-white font-mono text-xs font-bold"
                 />
                 <button
-                  onClick={() => handleToggleSetting('proPriceInr' as any, (settings?.proPriceInr || PRO_PRICE_INR) - 1)}
+                  type="button"
+                  onClick={() => handleToggleSetting('proPriceInr', settings?.proPriceInr ?? PRO_PRICE_INR)}
                   className="px-3 py-1.5 rounded-lg bg-[#0B2545] text-white text-xs font-bold cursor-pointer"
                 >
                   Save Price
@@ -1862,16 +1981,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
       {/* ========================================================================= */}
       {editingUser && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="glass-panel p-6 rounded-2xl !bg-white border border-line shadow-2xl w-full max-w-lg space-y-4">
+          <div
+            ref={editUserModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-user-modal-title"
+            tabIndex={-1}
+            className="glass-panel p-6 rounded-2xl !bg-white border border-line shadow-2xl w-full max-w-lg space-y-4 focus:outline-none"
+          >
             <div className="flex items-center justify-between border-b border-surface pb-3">
               <div>
-                <h3 className="text-base font-bold text-[#0B2545] font-['Space_Grotesk']">
+                <h3 id="edit-user-modal-title" className="text-base font-bold text-[#0B2545] font-['Space_Grotesk']">
                   Edit User Profile
                 </h3>
                 <span className="text-xs text-[#627D98] font-mono">{editingUser.email}</span>
               </div>
               <button
+                type="button"
                 onClick={() => setEditingUser(null)}
+                aria-label="Close dialog"
                 className="text-line-steel hover:text-ink-soft cursor-pointer p-1"
               >
                 <X className="w-5 h-5" />
@@ -1880,8 +2008,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="font-bold text-[#334E68] block mb-1">Display Name</label>
+                <label htmlFor="edit-user-name" className="font-bold text-[#334E68] block mb-1">Display Name</label>
                 <input
+                  id="edit-user-name"
                   type="text"
                   value={editFormData.displayName}
                   onChange={(e) => setEditFormData({ ...editFormData, displayName: e.target.value })}
@@ -1891,8 +2020,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-[#334E68] block mb-1">Plan</label>
+                  <label htmlFor="edit-user-plan" className="font-bold text-[#334E68] block mb-1">Plan</label>
                   <select
+                    id="edit-user-plan"
                     value={editFormData.currentPlan}
                     onChange={(e) => setEditFormData({ ...editFormData, currentPlan: e.target.value as any })}
                     className="w-full p-2 rounded-xl border border-line text-xs font-semibold"
@@ -1903,8 +2033,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
                 </div>
 
                 <div>
-                  <label className="font-bold text-[#334E68] block mb-1">Role</label>
+                  <label htmlFor="edit-user-role" className="font-bold text-[#334E68] block mb-1">Role</label>
                   <select
+                    id="edit-user-role"
                     value={editFormData.role}
                     onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as any })}
                     className="w-full p-2 rounded-xl border border-line text-xs font-semibold"
@@ -1917,9 +2048,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
               </div>
 
               <div>
-                <label className="font-bold text-[#334E68] block mb-1">Monthly Scans Used</label>
+                <label htmlFor="edit-user-scans" className="font-bold text-[#334E68] block mb-1">Monthly Scans Used</label>
                 <input
+                  id="edit-user-scans"
                   type="number"
+                  min={0}
                   value={editFormData.monthlyScansUsed}
                   onChange={(e) => setEditFormData({ ...editFormData, monthlyScansUsed: Number(e.target.value) })}
                   className="w-full p-2 rounded-xl border border-line font-mono text-xs font-bold"
@@ -1939,6 +2072,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
                 {editFormData.isBanned && (
                   <input
                     type="text"
+                    aria-label="Suspension reason"
                     placeholder="Suspension reason..."
                     value={editFormData.banReason}
                     onChange={(e) => setEditFormData({ ...editFormData, banReason: e.target.value })}
@@ -1973,12 +2107,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
       {showAddLLMModal && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
           <form
+            ref={addLlmModalRef}
             onSubmit={handleCreateLLM}
-            className="glass-panel p-6 rounded-2xl !bg-white border border-line shadow-2xl w-full max-w-lg space-y-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-llm-modal-title"
+            tabIndex={-1}
+            className="glass-panel p-6 rounded-2xl !bg-white border border-line shadow-2xl w-full max-w-lg space-y-4 focus:outline-none"
           >
             <div className="flex items-center justify-between border-b border-surface pb-3">
               <div>
-                <h3 className="text-base font-bold text-[#0B2545] font-['Space_Grotesk']">
+                <h3 id="add-llm-modal-title" className="text-base font-bold text-[#0B2545] font-['Space_Grotesk']">
                   Add New LLM Engine
                 </h3>
                 <span className="text-xs text-[#627D98]">Register a new model for tasks and fallbacks</span>
@@ -1986,6 +2125,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
               <button
                 type="button"
                 onClick={() => setShowAddLLMModal(false)}
+                aria-label="Close dialog"
                 className="text-line-steel hover:text-ink-soft cursor-pointer p-1"
               >
                 <X className="w-5 h-5" />
@@ -1994,8 +2134,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="font-bold text-[#334E68] block mb-1">Display Name</label>
+                <label htmlFor="llm-name" className="font-bold text-[#334E68] block mb-1">Display Name</label>
                 <input
+                  id="llm-name"
                   type="text"
                   placeholder="e.g., Llama 3.1 8B Instant"
                   value={newLLMData.name}
@@ -2007,8 +2148,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-[#334E68] block mb-1">Provider</label>
+                  <label htmlFor="llm-provider" className="font-bold text-[#334E68] block mb-1">Provider</label>
                   <select
+                    id="llm-provider"
                     value={newLLMData.provider}
                     onChange={(e) => setNewLLMData({ ...newLLMData, provider: e.target.value as any })}
                     className="w-full p-2 rounded-xl border border-line text-xs font-semibold"
@@ -2021,8 +2163,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
                 </div>
 
                 <div>
-                  <label className="font-bold text-[#334E68] block mb-1">Model Identifier</label>
+                  <label htmlFor="llm-model-id" className="font-bold text-[#334E68] block mb-1">Model Identifier</label>
                   <input
+                    id="llm-model-id"
                     type="text"
                     placeholder="e.g., llama-3.1-8b-instant"
                     value={newLLMData.modelId}
@@ -2035,8 +2178,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-[#334E68] block mb-1">Context Window</label>
+                  <label htmlFor="llm-context-window" className="font-bold text-[#334E68] block mb-1">Context Window</label>
                   <input
+                    id="llm-context-window"
                     type="text"
                     placeholder="e.g., 128k"
                     value={newLLMData.contextWindow}
@@ -2046,7 +2190,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
                 </div>
 
                 <div>
-                  <label className="font-bold text-[#334E68] block mb-1">Latency Tier</label>
+                  <label htmlFor="llm-latency-tier" className="font-bold text-[#334E68] block mb-1">Latency Tier</label>
                   <select
                     value={newLLMData.latencyTier}
                     onChange={(e) => setNewLLMData({ ...newLLMData, latencyTier: e.target.value as any })}
@@ -2079,7 +2223,53 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToWorkspace }) => 
             </div>
           </form>
         </div>
+
       )}
+
+      <ConfirmPromptDialog
+        isOpen={adminDialog !== null}
+        onCancel={() => setAdminDialog(null)}
+        onConfirm={(value) => {
+          const pending = adminDialog;
+          setAdminDialog(null);
+          if (!pending) return;
+          if (pending.kind === 'ban') {
+            // Cancelling the dialog aborts the suspension entirely; an empty
+            // reason still falls back to the documented default.
+            void performToggleBan(pending.userId, false, value || 'Policy violation');
+          } else if (pending.kind === 'deleteUser') {
+            void performDeleteUser(pending.userId, pending.email);
+          } else {
+            void performDeleteLLM(pending.llmId, pending.name);
+          }
+        }}
+        destructive
+        title={
+          adminDialog?.kind === 'ban'
+            ? 'Suspend this account'
+            : adminDialog?.kind === 'deleteUser'
+              ? 'Permanently delete this candidate'
+              : 'Remove this model configuration'
+        }
+        message={
+          adminDialog?.kind === 'ban'
+            ? `Suspension blocks ${adminDialog.email} from signing in until an admin reinstates the account. The reason is written to the audit log.`
+            : adminDialog?.kind === 'deleteUser'
+              ? `Delete ${adminDialog.email} permanently? All scans, resumes and tailored outputs for this account will be wiped. This cannot be undone.`
+              : `Remove ${adminDialog?.name ?? 'this model'} from the registry? Task bindings that still point at it lose their primary and should be rebound first.`
+        }
+        inputLabel={adminDialog?.kind === 'ban' ? 'Suspension / ban reason' : undefined}
+        inputInitialValue={adminDialog?.kind === 'ban' ? 'Automated security policy flag' : ''}
+        inputPlaceholder={adminDialog?.kind === 'ban' ? 'Why is this account being suspended?' : undefined}
+        inputFallback={adminDialog?.kind === 'ban' ? 'Policy violation' : ''}
+        confirmLabel={
+          adminDialog?.kind === 'ban'
+            ? 'Suspend account'
+            : adminDialog?.kind === 'deleteUser'
+              ? 'Delete user'
+              : 'Remove model'
+        }
+      />
     </div>
   );
 };

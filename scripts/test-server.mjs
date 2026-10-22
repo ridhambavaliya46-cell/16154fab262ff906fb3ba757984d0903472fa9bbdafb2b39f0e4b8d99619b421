@@ -259,6 +259,11 @@ async function main() {
     check('payment config is JSON', isJson(config));
     check('payment config advertises a price', typeof json(config)?.priceInr === 'number', config.body.slice(0, 120));
     check(
+      'payment config advertises the free-tier scan limit',
+      typeof json(config)?.freeTierMonthlyLimit === 'number' && json(config).freeTierMonthlyLimit > 0,
+      config.body.slice(0, 160)
+    );
+    check(
       'payment config exposes an owner profile',
       typeof json(config)?.owner?.handle === 'string' && json(config).owner.handle.startsWith('@'),
       config.body.slice(0, 160)

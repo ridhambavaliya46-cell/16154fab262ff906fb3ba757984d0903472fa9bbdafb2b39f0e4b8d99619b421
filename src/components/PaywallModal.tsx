@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AlertCircle, CheckCircle2, X, ShieldCheck, Sparkles, Send, LoaderCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.js';
 import { PRO_PRICE_INR } from '../config.js';
+import { useDialogA11y } from '../hooks/useDialogA11y.js';
 import { OwnerProfileCard, PaymentReference, type OwnerProfileData } from './OwnerProfile.js';
 
 interface PaywallModalProps {
@@ -28,74 +29,11 @@ interface PaymentConfig {
   owner: OwnerProfileData;
 }
 
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-/**
- * Minimal dialog accessibility: Escape closes, focus moves inside on open and
- * returns to the invoking element on close, and Tab is trapped in the panel so
- * keyboard users cannot tab into the inert page behind the overlay.
- */
-const useDialogA11y = (isOpen: boolean, onClose: () => void) => {
-  const panelRef = useRef<HTMLDivElement>(null);
-  const restoreFocusRef = useRef<HTMLElement | null>(null);
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-
-  useEffect(() => {
-    if (!isOpen) return;
-    restoreFocusRef.current = document.activeElement as HTMLElement | null;
-    panelRef.current?.focus();
-    return () => {
-      const target = restoreFocusRef.current;
-      if (target && document.body.contains(target)) target.focus();
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onCloseRef.current();
-        return;
-      }
-      if (event.key !== 'Tab') return;
-      const panel = panelRef.current;
-      if (!panel) return;
-      const focusables = Array.from(
-        panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
-      ).filter((el) => el.getClientRects().length > 0);
-      if (focusables.length === 0) {
-        event.preventDefault();
-        panel.focus();
-        return;
-      }
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-      if (event.shiftKey) {
-        if (!active || active === first || !panel.contains(active)) {
-          event.preventDefault();
-          last.focus();
-        }
-      } else if (active === last || !panel.contains(active)) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
-
-  return panelRef;
-};
-
 export const PaywallModal: React.FC<PaywallModalProps> = ({
   isOpen,
   onClose,
   title = 'Upgrade to ResumeSetu Pro',
-  subtitle = 'Get unlimited ATS-compliant single-column Word documents plus targeted cover letters.',
+  subtitle = 'Get unlimited resume scans, editable Word drafts, and role-specific cover letters. Payment is reviewed manually before Pro is activated.',
 }) => {
   const { user, setAuthModalOpen } = useAuth();
 

@@ -1,6 +1,6 @@
 import { runModel, TailorModelInput } from './models.js';
 import { atsEngine } from './ats-engine.js';
-import { validateAgainstSource } from './grounding.js';
+import { enforceGrounding } from './grounding.js';
 import { supabaseDb as db } from './supabase-db.js';
 
 /** Hard cap on retained jobs so a long-lived server cannot grow unbounded. */
@@ -202,8 +202,23 @@ class BackgroundTaskQueue {
       job.progress = 85;
       this.notify(jobId, job);
 
-      const tailoredResumeText: string = tailorResult.tailored_resume_text || '';
-      const coverLetterText: string = coverLetterResult.cover_letter_text || '';
+      // Grounding is ENFORCED before anything is stored: unsupported metrics
+      // become [add metric] placeholders and job-required skills the source
+      // resume never mentions are flagged. Persisting the raw model output — as
+      // this path used to — let invented numbers reach the exported file even
+      // though the report said they were unsupported.
+      const groundedTailor = enforceGrounding(
+        tailorResult.tailored_resume_text || '',
+        input.sourceResumeText,
+        input.jobDescription
+      );
+      const groundedCover = enforceGrounding(
+        coverLetterResult.cover_letter_text || '',
+        input.sourceResumeText,
+        input.jobDescription
+      );
+      const tailoredResumeText: string = groundedTailor.text;
+      const coverLetterText: string = groundedCover.text;
 
       // Recompute the score from the rewritten text. `improved_match_score` used
       // to be taken from the model's own prediction, which is a made-up number.
@@ -229,8 +244,7 @@ class BackgroundTaskQueue {
         coverLetterText,
         keyChangesMade: tailorResult.key_changes_made || [],
         synthetic: Boolean(tailorResult.synthetic),
-        notice:
-          validateAgainstSource(tailoredResumeText, input.sourceResumeText).note,
+        notice: groundedTailor.report.note,
         rescan: rescan
           ? {
               matchScore: rescan.matchScore,

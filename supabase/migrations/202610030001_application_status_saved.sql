@@ -34,3 +34,4 @@
 -- ---------------------------------------------------------------------------
 
 alter type public.application_status add value if not exists 'SAVED';
+notify pgrst, 'reload schema';

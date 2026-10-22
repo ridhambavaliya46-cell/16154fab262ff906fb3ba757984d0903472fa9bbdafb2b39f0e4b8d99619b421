@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const failures: string[] = [];
 const warnings: string[] = [];
+const isProductionDeploy = process.env.NODE_ENV === 'production' || process.env.CONTEXT === 'production';
 const requireValue = (name: string, minimumLength = 1): string | null => {
   const value = process.env[name]?.trim();
   if (!value || value.length < minimumLength) {
@@ -13,8 +14,13 @@ const requireValue = (name: string, minimumLength = 1): string | null => {
   }
   return value;
 };
+const describeSupabaseError = (error: { code?: string; status?: number; message?: string } | null | undefined): string => {
+  if (!error) return 'request failed';
+  const parts = [error.code, error.status ? `HTTP ${error.status}` : '', error.message].filter(Boolean);
+  return parts.join(': ') || 'request failed';
+};
 
-if (process.env.NODE_ENV !== 'production') {
+if (!isProductionDeploy) {
   warnings.push('NODE_ENV is not production; deployment checks still run against the configured project.');
 }
 
@@ -24,7 +30,10 @@ const clerkPublishable = requireValue('VITE_CLERK_PUBLISHABLE_KEY');
 requireValue('SESSION_SECRET', 32);
 requireValue('STORAGE_ENCRYPTION_KEY', 32);
 const supabaseUrl = process.env.SUPABASE_URL?.trim() || process.env.SUPABASE_STORAGE_URL?.trim() || null;
-const supabaseSecret = requireValue('SUPABASE_SERVICE_ROLE_KEY');
+const supabaseSecret = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+  || process.env.SUPABASE_SECRET_KEY?.trim()
+  || null;
+if (!supabaseSecret) failures.push('SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEY must be set.');
 const bucketName = process.env.SUPABASE_STORAGE_BUCKET?.trim() || 'resumes-private';
 const appUrl = process.env.APP_URL?.trim();
 
@@ -38,10 +47,10 @@ if (clerkSecret && !clerkSecret.startsWith('sk_')) {
 if (clerkPublishable && !clerkPublishable.startsWith('pk_')) {
   failures.push('VITE_CLERK_PUBLISHABLE_KEY does not look like a Clerk publishable key.');
 }
-if (process.env.NODE_ENV === 'production' && clerkSecret && !clerkSecret.startsWith('sk_live_')) {
+if (isProductionDeploy && clerkSecret && !clerkSecret.startsWith('sk_live_')) {
   failures.push('Production requires a Clerk live secret key (sk_live_...).');
 }
-if (process.env.NODE_ENV === 'production' && clerkPublishable && !clerkPublishable.startsWith('pk_live_')) {
+if (isProductionDeploy && clerkPublishable && !clerkPublishable.startsWith('pk_live_')) {
   failures.push('Production requires a Clerk live publishable key (pk_live_...).');
 }
 
@@ -51,7 +60,7 @@ try {
 } catch {
   failures.push('APP_URL must be an absolute deployment URL.');
 }
-if (process.env.NODE_ENV === 'production' && appOrigin) {
+if (isProductionDeploy && appOrigin) {
   const parsedAppUrl = new URL(appOrigin);
   if (parsedAppUrl.protocol !== 'https:' || ['localhost', '127.0.0.1'].includes(parsedAppUrl.hostname)) {
     failures.push('Production APP_URL must use HTTPS and a public hostname.');
@@ -62,7 +71,7 @@ const authorizedParties = (process.env.CLERK_AUTHORIZED_PARTIES || '')
   .map((origin) => origin.trim())
   .filter(Boolean);
 if (appOrigin && !authorizedParties.includes(appOrigin)) {
-  failures.push('CLERK_AUTHORIZED_PARTIES must include the exact APP_URL origin.');
+  failures.push(`CLERK_AUTHORIZED_PARTIES must include the exact APP_URL origin "${appOrigin}" (no trailing slash).`);
 }
 
 if (!fs.existsSync(path.resolve(process.cwd(), 'dist', 'index.html'))) {
@@ -82,7 +91,7 @@ if (supabaseUrl && supabaseSecret) {
   });
   const bucket = await supabase.storage.getBucket(bucketName);
   if (bucket.error || !bucket.data || bucket.data.public) {
-    failures.push(`Supabase bucket "${bucketName}" must exist, be private, and be accessible to the server key${bucket.error ? ` (${bucket.error.message})` : ''}.`);
+    failures.push(`Supabase bucket "${bucketName}" must exist, be private, and be accessible to the server key${bucket.error ? ` (${describeSupabaseError(bucket.error)})` : ''}.`);
   }
 
   const tableNames = [
@@ -96,29 +105,47 @@ if (supabaseUrl && supabaseSecret) {
   // head:error=null but rows:error=PGRST205). The deploy gate therefore passed
   // while `users` or `security_logs` could have been missing — the one class of
   // failure it exists to catch. `.limit(1)` returns PGRST205 correctly.
-  const tableChecks = await Promise.all(tableNames.map(async (table) => {
+  // Keep these probes sequential. Ten simultaneous PostgREST requests can
+  // trip a platform or network burst limit and turn a healthy project into a
+  // misleading wall of "fetch failed" errors.
+  for (const table of tableNames) {
     const { error } = await supabase.from(table).select('*').limit(1);
-    return { table, error };
-  }));
-  for (const { table, error } of tableChecks) {
-    if (error) failures.push(`Supabase table public.${table} is unavailable (${error.code || 'request failed'}).`);
+    if (error) {
+      const migration = table === 'api_rate_limits'
+        ? '202610070001_shared_ip_rate_limits.sql'
+        : table === 'manual_payment_records'
+          ? '202610070002_manual_payment_ledger.sql'
+          : null;
+      failures.push(
+        `Supabase table public.${table} is unavailable (${describeSupabaseError(error)}).` +
+        (migration ? ` Apply supabase/migrations/${migration} in the Supabase SQL Editor.` : '')
+      );
+    }
   }
   const probeId = `deployment_probe_${Date.now()}`;
   const quotaFunction = await supabase.rpc('consume_scan_quota', { p_user_id: probeId });
-  if (quotaFunction.error) failures.push(`Supabase quota function is unavailable (${quotaFunction.error.code || 'request failed'}).`);
+  if (quotaFunction.error) failures.push(`Supabase quota function is unavailable (${describeSupabaseError(quotaFunction.error)}).`);
   const pingFunction = await supabase.rpc('record_session_ping', { p_user_id: probeId, p_seconds: 0 });
-  if (pingFunction.error) failures.push(`Supabase session analytics function is unavailable (${pingFunction.error.code || 'request failed'}).`);
+  if (pingFunction.error) failures.push(`Supabase session analytics function is unavailable (${describeSupabaseError(pingFunction.error)}).`);
   const burstFunction = await supabase.rpc('consume_ip_burst_limit', {
     p_key_hash: 'invalid', p_max_requests: 1, p_window_seconds: 60,
   });
-  if (burstFunction.error?.code !== 'P0001') failures.push(`Supabase shared rate-limit function is unavailable (${burstFunction.error?.code || 'request failed'}).`);
+  if (burstFunction.error?.code !== 'P0001') {
+    failures.push(
+      `Supabase shared rate-limit function is unavailable (${describeSupabaseError(burstFunction.error)}). ` +
+      'Apply supabase/migrations/202610070001_shared_ip_rate_limits.sql in the Supabase SQL Editor.'
+    );
+  }
   const paymentFunction = await supabase.rpc('record_manual_payment', {
     p_id: 'deployment_probe', p_user_id: 'deployment_probe', p_amount_inr: 0,
     p_payment_method: 'invalid', p_transaction_reference: '', p_payment_request_reference: '',
-    p_required_amount_inr: 249, p_note: '', p_recorded_by: 'deployment_probe',
+    p_required_amount_inr: 1, p_note: '', p_recorded_by: 'deployment_probe',
   });
   if (!paymentFunction.error || !['P0001', '23514'].includes(paymentFunction.error.code || '')) {
-    failures.push(`Supabase manual payment ledger function is unavailable (${paymentFunction.error?.code || 'unexpected success'}).`);
+    failures.push(
+      `Supabase manual payment ledger function is unavailable (${describeSupabaseError(paymentFunction.error)}). ` +
+      'Apply supabase/migrations/202610070002_manual_payment_ledger.sql in the Supabase SQL Editor.'
+    );
   }
 
   /*

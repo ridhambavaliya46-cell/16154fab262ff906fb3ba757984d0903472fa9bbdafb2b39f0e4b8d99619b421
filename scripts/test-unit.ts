@@ -17,10 +17,13 @@ import { atsEngine } from '../lib/ats-engine.js';
 import { runDocumentChecks } from '../lib/document-checks.js';
 import {
   enforceGrounding,
+  redactUnsupportedDates,
   redactUnsupportedMetrics,
   validateAgainstSource,
 } from '../lib/grounding.js';
 import { generateResumeDocx, verifyDocxIntegrity } from '../lib/docx-generator.js';
+import { buildResumeHighlights, DEFAULT_MAX_HIGHLIGHTS } from '../lib/resume-highlight.js';
+import { buildScoreExplanation, COVERAGE_WEIGHT, SEMANTIC_WEIGHT } from '../lib/score-explainer.js';
 import { checkIpBurstLimit, resetIpBurstLimits } from '../lib/burst-limiter.js';
 import {
   decodeEntities,
@@ -359,6 +362,32 @@ section('grounding');
   const withYear = redactUnsupportedMetrics('Worked at FinTech Systems from 2022 to 2026.', SW_ENGINEER_RESUME);
   check('a 4-digit year is not treated as a fabricated metric', !withYear.text.includes('[add metric]'), withYear.text);
 
+  // A date can be present in the source in one part of a range and still be
+  // contradicted by an invented second year. Years are checked separately from
+  // metrics so an output cannot quietly change an employment timeline.
+  const contradictoryTimeline = validateAgainstSource(
+    'Senior Software Engineer | FinTech Systems (2022 - 2023).',
+    SW_ENGINEER_RESUME
+  );
+  check(
+    'a year absent from the source is flagged as a contradictory date',
+    contradictoryTimeline.findings.some((f) => f.kind === 'unsupported_date' && f.excerpt === '2023'),
+    JSON.stringify(contradictoryTimeline.findings)
+  );
+  const redactedDate = redactUnsupportedDates('Senior Software Engineer | FinTech Systems (2022 - 2023).', SW_ENGINEER_RESUME);
+  check(
+    'an unsupported date is replaced with a confirmation placeholder',
+    redactedDate.text.includes('[confirm date]') && !redactedDate.text.includes('2023')
+  );
+  const enforcedTimeline = enforceGrounding(
+    'Senior Software Engineer | FinTech Systems (2022 - 2023).',
+    SW_ENGINEER_RESUME
+  );
+  check(
+    'enforceGrounding prevents a contradictory year reaching the draft',
+    enforcedTimeline.text.includes('[confirm date]') && enforcedTimeline.report.findings.some((f) => f.kind === 'unsupported_date')
+  );
+
   // An employer that IS in the resume must not be flagged.
   const knownEmployer = validateAgainstSource(
     'At FinTech Systems I built customer portals.',
@@ -377,6 +406,88 @@ section('grounding');
     'an unknown employer is flagged for review',
     unknownEmployer.findings.some((f) => f.kind === 'unsupported_employer'),
     JSON.stringify(unknownEmployer.findings)
+  );
+
+  // A posting requirement the resume never mentions must not be written into
+  // the document as existing experience.
+  const claimsMissingSkill = validateAgainstSource(
+    'Built and deployed CI/CD pipelines on AWS with Kubernetes.',
+    SW_ENGINEER_RESUME,
+    FULLSTACK_JD
+  );
+  check(
+    'a JD-required skill absent from the resume is flagged as unsupported',
+    claimsMissingSkill.findings.some((f) => f.kind === 'unsupported_skill' && f.excerpt === 'ci/cd'),
+    JSON.stringify(claimsMissingSkill.findings)
+  );
+  check('unsupported skills make the output not grounded', claimsMissingSkill.grounded === false);
+
+  const enforcesMissingSkill = enforceGrounding(
+    'Built and deployed CI/CD pipelines on AWS with Kubernetes.',
+    SW_ENGINEER_RESUME,
+    FULLSTACK_JD
+  );
+  check(
+    'enforceGrounding reports the unsupported skill',
+    enforcesMissingSkill.report.findings.some((f) => f.kind === 'unsupported_skill'),
+    JSON.stringify(enforcesMissingSkill.report.findings)
+  );
+
+  // A skill the resume DOES contain must never be flagged, even with a JD.
+  const hasSkill = validateAgainstSource(
+    'Containerized services with Docker and queried PostgreSQL.',
+    SW_ENGINEER_RESUME,
+    FULLSTACK_JD
+  );
+  check(
+    'skills present in the resume are not flagged',
+    !hasSkill.findings.some((f) => f.kind === 'unsupported_skill'),
+    JSON.stringify(hasSkill.findings)
+  );
+
+  // Without a job description the skill pass is simply not run.
+  const noJd = validateAgainstSource('Built CI/CD pipelines.', SW_ENGINEER_RESUME);
+  check(
+    'no job description means no unsupported_skill findings',
+    !noJd.findings.some((f) => f.kind === 'unsupported_skill')
+  );
+
+  // REGRESSION: a gap checklist names missing terms honestly. It must not be
+  // read as the candidate claiming skills they do not have.
+  const gapChecklist = validateAgainstSource(
+    `Full stack engineer with React and PostgreSQL.\n\nGAPS — keywords this job description asks for that your resume does not evidence:\n  - aws\n  - kubernetes\n  - graphql\n\nThese are gaps, not achievements. Only claim them if you genuinely have that experience.`,
+    SW_ENGINEER_RESUME,
+    FULLSTACK_JD
+  );
+  check(
+    'a gap checklist is not reported as claimed skills',
+    !gapChecklist.findings.some((f) => f.kind === 'unsupported_skill'),
+    JSON.stringify(gapChecklist.findings)
+  );
+
+  // REGRESSION: EMPLOYER_PATTERN uses the `i` flag, so its `[A-Z]` classes
+  // match lowercase too. Ordinary prose after a preposition used to be reported
+  // as an employer the candidate had invented.
+  const prose = validateAgainstSource(
+    'React, TypeScript and Node.js cover the keywords this posting asks for that your resume does not evidence yet.',
+    SW_ENGINEER_RESUME
+  );
+  check(
+    'lowercase prose after a preposition is not an employer',
+    !prose.findings.some((f) => f.kind === 'unsupported_employer'),
+    JSON.stringify(prose.findings)
+  );
+
+  // Capitalised multi-word names must STILL be caught, and mixed-case ordinary
+  // phrases after a preposition must not be either.
+  const mixedCase = validateAgainstSource(
+    'I improved this with React and TypeScript across the stack.',
+    SW_ENGINEER_RESUME
+  );
+  check(
+    'an ordinary mixed-case phrase is not an employer',
+    !mixedCase.findings.some((f) => f.kind === 'unsupported_employer'),
+    JSON.stringify(mixedCase.findings)
   );
 }
 
@@ -423,6 +534,194 @@ check('a content mismatch is detected', emptyIntegrity.verified === false);
 const nameOmitted = await generateResumeDocx({ candidateName: null, tailoredText });
 const nameIntegrity = await verifyDocxIntegrity(nameOmitted, tailoredText);
 check('omitting the name still exports valid content', nameIntegrity.verified, nameIntegrity.detail);
+
+// ---------------------------------------------------------------------------
+// 6b. Recruiter-facing resume highlighting
+// ---------------------------------------------------------------------------
+section('resume highlighting');
+
+{
+  const analysis = atsEngine.analyzeMatch(FULLSTACK_JD, SW_ENGINEER_RESUME);
+  const built = buildResumeHighlights({
+    resumeText: SW_ENGINEER_RESUME,
+    matchedKeywords: analysis.keywordsMatched,
+    missingKeywords: analysis.missingKeywords,
+  });
+
+  check(
+    'segments reconstruct the original text byte-for-byte',
+    built.segments.map((s) => s.text).join('') === SW_ENGINEER_RESUME
+  );
+  check(
+    'every highlight is a literal substring of the resume',
+    built.highlights.every((h) => SW_ENGINEER_RESUME.slice(h.start, h.end) === h.text && h.text.length > 0),
+    JSON.stringify(built.highlights.map((h) => h.text))
+  );
+  check('highlights are ordered and non-overlapping', (() => {
+    let cursor = -1;
+    for (const h of built.highlights) {
+      if (h.start < cursor) return false;
+      cursor = h.end;
+    }
+    return true;
+  })());
+  check('the default cap is respected', built.highlights.length <= DEFAULT_MAX_HIGHLIGHTS, `${built.highlights.length}`);
+  check('highlights carry a label and a reason', built.highlights.every((h) => h.label.length > 0 && h.reason.length > 0));
+  check(
+    'keyword highlights name the requirement they answer',
+    built.highlights.filter((h) => h.category === 'keyword').every((h) => Boolean(h.jdRequirement)),
+    JSON.stringify(built.highlights.filter((h) => h.category === 'keyword'))
+  );
+  check('every highlight is marked as explicit in the source', built.highlights.every((h) => h.evidence === 'explicit_in_source'));
+
+  // THE INVARIANT: a gap can only be highlighted if its characters exist in
+  // the resume, which by definition of "missing" they do not.
+  const missing = analysis.missingKeywords;
+  check('the fixture actually has missing keywords', missing.length > 0, JSON.stringify(missing));
+  check(
+    'a missing keyword is never highlighted',
+    missing.every((term) => !built.highlights.some((h) => h.text.toLowerCase().includes(term.toLowerCase()))),
+    JSON.stringify(built.highlights.map((h) => h.text))
+  );
+  check(
+    'missing keywords cannot be smuggled in through the option',
+    buildResumeHighlights({
+      resumeText: SW_ENGINEER_RESUME,
+      matchedKeywords: analysis.keywordsMatched,
+      missingKeywords: ['kubernetes', 'graphql', 'next.js'],
+    }).highlights.every((h) => !['kubernetes', 'graphql', 'next.js'].some((m) => h.text.toLowerCase().includes(m)))
+  );
+
+  check(
+    'a quantified line is offered as an achievement',
+    built.highlights.some((h) => h.category === 'achievement' && h.text.includes('42%')),
+    JSON.stringify(built.highlights.map((h) => h.category))
+  );
+  check(
+    'a leadership line is offered as a responsibility',
+    built.highlights.some((h) => h.category === 'responsibility'),
+    JSON.stringify(built.highlights.map((h) => `${h.category}:${h.text}`))
+  );
+
+  // Certifications come from the same pattern the grounding validator flags, so
+  // a phrase must be either acceptable evidence or a fabrication — never both.
+  const withCert = buildResumeHighlights({
+    resumeText: `${SW_ENGINEER_RESUME}CERTIFICATIONS\nAWS Certified Solutions Architect\n`,
+    matchedKeywords: analysis.keywordsMatched,
+    missingKeywords: analysis.missingKeywords,
+  });
+  check(
+    'a certification in the resume is highlighted as such',
+    withCert.highlights.some((h) => h.category === 'certification' && h.text.toLowerCase().includes('aws certified')),
+    JSON.stringify(withCert.highlights.map((h) => `${h.category}:${h.text}`))
+  );
+
+  // Selectivity: never silently hide drops.
+  const capped = buildResumeHighlights({
+    resumeText: SW_ENGINEER_RESUME,
+    matchedKeywords: analysis.keywordsMatched,
+    missingKeywords: analysis.missingKeywords,
+    maxHighlights: 3,
+  });
+  check('an explicit cap is honoured', capped.highlights.length <= 3, `${capped.highlights.length}`);
+  check(
+    'dropped matches are counted rather than vanished',
+    capped.hiddenBySelectivity >= 0 && capped.highlights.length + capped.hiddenBySelectivity >= capped.highlights.length
+  );
+  check('the capped pass still preserves the text', capped.segments.map((s) => s.text).join('') === SW_ENGINEER_RESUME);
+
+  // Edges.
+  const emptyBuilt = buildResumeHighlights({ resumeText: '' });
+  check('an empty resume yields no highlights and no throw', emptyBuilt.highlights.length === 0 && emptyBuilt.segments.length === 0);
+  const noTerms = buildResumeHighlights({ resumeText: 'Some plain sentence with no match at all.', matchedKeywords: [] });
+  check('no matched keywords yields an untouched read', noTerms.highlights.length === 0);
+  check('the JD requirement is null when there is nothing to point at', noTerms.highlights.every((h) => h.jdRequirement === null));
+}
+
+// ---------------------------------------------------------------------------
+// 6c. Highlighted DOCX export must not change a single character
+// ---------------------------------------------------------------------------
+section('highlighted docx export');
+
+{
+  const spans = buildResumeHighlights({ resumeText: tailoredText })
+    .highlights.map((h) => ({ start: h.start, end: h.end }));
+  const highlightedDocx = await generateResumeDocx({
+    candidateName: 'Alex Chen',
+    jobTitle: 'Senior Full Stack Engineer',
+    tailoredText,
+    highlights: spans,
+  });
+  const highlightedIntegrity = await verifyDocxIntegrity(highlightedDocx, tailoredText);
+  check('a highlighted export still round-trips its content', highlightedIntegrity.verified, highlightedIntegrity.detail);
+  check('a highlighted export covers the same lines', highlightedIntegrity.contentCoverage >= 0.95, `${highlightedIntegrity.contentCoverage}`);
+
+  const cleanDocx = await generateResumeDocx({ candidateName: 'Alex Chen', jobTitle: 'Senior Full Stack Engineer', tailoredText });
+  check('shading actually changes the file', !highlightedDocx.equals(cleanDocx));
+
+  const outOfRange = await generateResumeDocx({ tailoredText, highlights: [{ start: -50, end: 999999 }] });
+  const outOfRangeIntegrity = await verifyDocxIntegrity(outOfRange, tailoredText);
+  check('out-of-range spans cannot corrupt the export', outOfRangeIntegrity.verified, outOfRangeIntegrity.detail);
+}
+
+// ---------------------------------------------------------------------------
+// 6d. Score clarity — the explanation must match the engine, not marketing
+// ---------------------------------------------------------------------------
+section('score clarity');
+
+{
+  const analysis = atsEngine.analyzeMatch(FULLSTACK_JD, SW_ENGINEER_RESUME);
+  const explanation = buildScoreExplanation({
+    scoreBreakdown: analysis.scoreBreakdown,
+    matchedCount: analysis.matchedCount,
+    requiredCount: analysis.requiredCount,
+    missingCount: analysis.missingCount,
+    inputQuality: analysis.inputQuality,
+  });
+
+  check('the formula quotes the real weights', explanation.formula === `overall = ${COVERAGE_WEIGHT}% × keyword coverage + ${SEMANTIC_WEIGHT}% × semantic proximity`, explanation.formula);
+  check('the weights still add to 100', COVERAGE_WEIGHT + SEMANTIC_WEIGHT === 100);
+  check('the explanation recomputes the engine total', explanation.recomputed === analysis.scoreBreakdown.overall, `${explanation.recomputed} vs ${analysis.scoreBreakdown.overall}`);
+  check('three components are explained', explanation.rows.length === 3, `${explanation.rows.length}`);
+  check('component values stay inside 0-100', explanation.rows.every((row) => row.value >= 0 && row.value <= 100));
+  check('every row defines itself and how it moves', explanation.rows.every((row) => row.definition.length > 20 && row.movesIt.length > 20));
+  check('the coverage row states the real denominator', explanation.rows[0].definition.includes(`${analysis.requiredCount}`), explanation.rows[0].definition);
+  check('what the score cannot measure is disclosed', explanation.notMeasured.length >= 3);
+  check('a scorable analysis has no unscoreable reason', explanation.scorable && explanation.unscoreableReason === null);
+  check('advice forbids unearned keywords', explanation.advice.join(' ').includes('never'), explanation.advice.join(' | '));
+
+  // Edge case: an empty resume must refuse to score rather than show 0 as fact.
+  const unscorable = atsEngine.analyzeMatch(FULLSTACK_JD, '');
+  const unscorableExplanation = buildScoreExplanation({
+    scoreBreakdown: unscorable.scoreBreakdown,
+    matchedCount: unscorable.matchedCount,
+    requiredCount: unscorable.requiredCount,
+    inputQuality: unscorable.inputQuality,
+  });
+  check('an unscorable input is reported as unscorable', unscorableExplanation.scorable === false);
+  check('the engine sentence explains why', Boolean(unscorableExplanation.unscoreableReason && unscorableExplanation.unscoreableReason.length > 10), unscorableExplanation.unscoreableReason ?? '');
+  check('no advice is invented when nothing was scored', unscorableExplanation.advice.length === 0, JSON.stringify(unscorableExplanation.advice));
+
+  // Edge case: a posting with no recognised keywords after noise filtering.
+  const noiseOnly = atsEngine.analyzeMatch(UNUSABLE_JD, SW_ENGINEER_RESUME);
+  check('a signal-free posting is not scorable', noiseOnly.inputQuality.scorable === false && noiseOnly.inputQuality.reason === 'no_keyword_signal');
+  const zeroRequired = buildScoreExplanation({
+    scoreBreakdown: { keywordCoverage: 0, semanticProximity: 0, overall: 0 },
+    matchedCount: 0,
+    requiredCount: 0,
+    inputQuality: noiseOnly.inputQuality,
+  });
+  check('a zero denominator is explained, not shown as 0% coverage', zeroRequired.rows[0].definition.includes('nothing to count'), zeroRequired.rows[0].definition);
+
+  // Edge case: components that disagree with the stored total must surface as a
+  // mismatch (the test above asserts equality for real data).
+  const tampered = buildScoreExplanation({
+    scoreBreakdown: { keywordCoverage: 100, semanticProximity: 100, overall: 40 },
+    matchedCount: 10,
+    requiredCount: 10,
+  });
+  check('a tampered total is detectable by recomputation', tampered.recomputed === 100 && tampered.rows[2].value === 40, `${tampered.recomputed}`);
+}
 
 // ---------------------------------------------------------------------------
 // 7. Free / Pro limits and throttling
@@ -690,9 +989,30 @@ section('migrations');
   check('the migration does not wrap it in a commit', !/^\s*commit\s*;/im.test(executable));
   check('the migration swallows no errors', !/exception\s+when/i.test(executable), executable);
   check('the migration does not catch all errors', !/when\s+others/i.test(executable));
+
+  /*
+   * Allowed statements: the additive ALTER TYPE itself, plus the conventional
+   * `notify pgrst, 'reload schema'` that makes the new enum value visible to
+   * PostgREST without a restart. Every other executable statement is a
+   * regression — this file must never grow a DROP, UPDATE, or a second
+   * mutation of the enum.
+   */
+  const statements = executable
+    .split(';')
+    .map((part) => part.trim().replace(/\s+/g, ' '))
+    .filter(Boolean);
+  const isAllowedStatement = (stmt: string) =>
+    /^alter\s+type\s+public\.application_status\s+add\s+value(\s+if\s+not\s+exists)?\s+'SAVED'$/i.test(
+      stmt
+    ) || /^notify\s+pgrst,\s*'reload schema'$/i.test(stmt);
   check(
-    'the migration is a single additive statement',
-    executable.trim().split(';').filter((part) => part.trim()).length === 1,
+    'the migration contains only the additive ALTER TYPE and the pgrst reload',
+    statements.length > 0 && statements.every(isAllowedStatement),
+    executable
+  );
+  check(
+    'the migration still contains its one additive statement',
+    statements.some((stmt) => /^alter\s+type/i.test(stmt)),
     executable
   );
 }

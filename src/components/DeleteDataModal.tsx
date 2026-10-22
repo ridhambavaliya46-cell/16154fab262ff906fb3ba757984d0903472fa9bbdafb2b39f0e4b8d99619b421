@@ -1,76 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.js';
+import { useDialogA11y } from '../hooks/useDialogA11y.js';
 
 interface DeleteDataModalProps {
   isOpen: boolean;
   onClose: () => void;
   onDeleted?: () => void;
 }
-
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-/**
- * Minimal dialog accessibility: Escape closes, focus moves inside on open and
- * returns to the invoking element on close, and Tab is trapped in the panel so
- * keyboard users cannot tab into the inert page behind the overlay.
- */
-const useDialogA11y = (isOpen: boolean, onClose: () => void) => {
-  const panelRef = useRef<HTMLDivElement>(null);
-  const restoreFocusRef = useRef<HTMLElement | null>(null);
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-
-  useEffect(() => {
-    if (!isOpen) return;
-    restoreFocusRef.current = document.activeElement as HTMLElement | null;
-    panelRef.current?.focus();
-    return () => {
-      const target = restoreFocusRef.current;
-      if (target && document.body.contains(target)) target.focus();
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onCloseRef.current();
-        return;
-      }
-      if (event.key !== 'Tab') return;
-      const panel = panelRef.current;
-      if (!panel) return;
-      const focusables = Array.from(
-        panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
-      ).filter((el) => el.getClientRects().length > 0);
-      if (focusables.length === 0) {
-        event.preventDefault();
-        panel.focus();
-        return;
-      }
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-      if (event.shiftKey) {
-        if (!active || active === first || !panel.contains(active)) {
-          event.preventDefault();
-          last.focus();
-        }
-      } else if (active === last || !panel.contains(active)) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
-
-  return panelRef;
-};
 
 export const DeleteDataModal: React.FC<DeleteDataModalProps> = ({
   isOpen,
@@ -80,17 +18,23 @@ export const DeleteDataModal: React.FC<DeleteDataModalProps> = ({
   const { deleteMyData } = useAuth();
   const [confirmText, setConfirmText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const panelRef = useDialogA11y(isOpen, onClose);
 
   const handleDelete = async () => {
     if (confirmText.toLowerCase() !== 'delete') return;
     setLoading(true);
+    setError(null);
     const success = await deleteMyData();
     setLoading(false);
     if (success) {
       if (onDeleted) onDeleted();
       onClose();
+    } else {
+      // An ambiguous failure on an irreversible action is unacceptable — the
+      // user must know the purge did not go through.
+      setError('Could not delete your data. Please try again — your data was NOT removed.');
     }
   };
 
@@ -151,10 +95,14 @@ export const DeleteDataModal: React.FC<DeleteDataModalProps> = ({
                 </p>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B2545] mb-1.5">
+                  <label
+                    htmlFor="delete-confirm-input"
+                    className="block text-xs font-semibold text-[#0B2545] mb-1.5"
+                  >
                     Type <span className="font-mono font-bold text-danger">DELETE</span> to confirm
                   </label>
                   <input
+                    id="delete-confirm-input"
                     type="text"
                     value={confirmText}
                     onChange={(e) => setConfirmText(e.target.value)}
@@ -162,6 +110,12 @@ export const DeleteDataModal: React.FC<DeleteDataModalProps> = ({
                     className="w-full px-3.5 py-2.5 rounded-xl border border-line bg-canvas text-[#0B2545] text-xs font-mono focus:outline-none focus:border-danger focus:ring-2 focus:ring-danger/20 placeholder:text-[#8DA9C4] transition-colors"
                   />
                 </div>
+
+                {error && (
+                  <p role="alert" className="text-xs font-semibold text-danger leading-relaxed">
+                    {error}
+                  </p>
+                )}
 
                 <div className="pt-2 flex gap-3">
                   <button

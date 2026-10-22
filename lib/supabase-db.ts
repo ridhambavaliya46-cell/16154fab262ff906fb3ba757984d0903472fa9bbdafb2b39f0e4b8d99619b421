@@ -45,7 +45,11 @@ function toCamel(value: string): string {
 }
 
 function toRow<T extends object>(value: T): Record<string, unknown> {
-  return Object.fromEntries(Object.entries(value).map(([key, field]) => [toSnake(key), field]));
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => key !== '__proto__' && key !== 'constructor' && key !== 'prototype')
+      .map(([key, field]) => [toSnake(key), field])
+  );
 }
 
 function fromRow<T>(value: Record<string, any> | null): T | null {

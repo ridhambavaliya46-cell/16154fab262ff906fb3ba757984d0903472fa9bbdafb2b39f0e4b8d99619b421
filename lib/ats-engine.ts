@@ -499,3 +499,14 @@ export class AtsAlgorithmicEngine {
 }
 
 export const atsEngine = new AtsAlgorithmicEngine();
+
+/**
+ * True when a term is one of the curated tools/technologies.
+ *
+ * Exported so the highlighter can label spans as "tool" vs plain "keyword"
+ * using the SAME taxonomy the score was computed with, instead of carrying a
+ * second list that would drift.
+ */
+export function isTechnicalTerm(term: string): boolean {
+  return TECH_TAXONOMY.has((term || '').toLowerCase());
+}

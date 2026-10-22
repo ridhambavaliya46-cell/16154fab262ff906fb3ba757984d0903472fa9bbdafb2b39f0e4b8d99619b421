@@ -19,6 +19,7 @@
  * Scripted so a missing value fails the build instead of silently shipping an
  * unlocked policy.
  */
+import 'dotenv/config';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { buildContentSecurityPolicy, SECURITY_HEADERS, HSTS_HEADER } from '../lib/csp.js';

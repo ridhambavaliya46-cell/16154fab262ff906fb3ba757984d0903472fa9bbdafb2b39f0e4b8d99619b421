@@ -22,9 +22,12 @@ import {
   Zap,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.js';
+import { useDialogA11y } from '../hooks/useDialogA11y.js';
 import { ScoreGauge } from '../components/ScoreGauge.js';
 import { CodeBlock } from '../components/CodeBlock.js';
-import { PRO_PRICE_INR, FREE_SCAN_LIMIT } from '../config.js';
+import { ResumeHighlightPreview } from '../components/ResumeHighlightPreview.js';
+import { ScoreExplainer } from '../components/ScoreExplainer.js';
+import { FREE_SCAN_LIMIT } from '../config.js';
 import {
   ApplicationRecord,
   AtsAnalysis,
@@ -37,7 +40,6 @@ import {
 
 interface DashboardProps {
   onOpenPaywall: () => void;
-  onOpenDeleteData: () => void;
 }
 
 type WorkspaceTab = 'calibration' | 'tailored' | 'cover' | 'tracker' | 'intelligence';
@@ -127,69 +129,6 @@ Qualifications:
 - Demonstrated ability to synthesize customer feedback into intuitive feature roadmaps.`,
   },
 ];
-
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-/**
- * Minimal dialog accessibility: Escape closes, focus moves inside on open and
- * returns to the invoking element on close, and Tab is trapped in the panel so
- * keyboard users cannot tab into the inert page behind the overlay.
- */
-const useDialogA11y = (isOpen: boolean, onClose: () => void) => {
-  const panelRef = useRef<HTMLDivElement>(null);
-  const restoreFocusRef = useRef<HTMLElement | null>(null);
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-
-  useEffect(() => {
-    if (!isOpen) return;
-    restoreFocusRef.current = document.activeElement as HTMLElement | null;
-    panelRef.current?.focus();
-    return () => {
-      const target = restoreFocusRef.current;
-      if (target && document.body.contains(target)) target.focus();
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onCloseRef.current();
-        return;
-      }
-      if (event.key !== 'Tab') return;
-      const panel = panelRef.current;
-      if (!panel) return;
-      const focusables = Array.from(
-        panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
-      ).filter((el) => el.getClientRects().length > 0);
-      if (focusables.length === 0) {
-        event.preventDefault();
-        panel.focus();
-        return;
-      }
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-      if (event.shiftKey) {
-        if (!active || active === first || !panel.contains(active)) {
-          event.preventDefault();
-          last.focus();
-        }
-      } else if (active === last || !panel.contains(active)) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
-
-  return panelRef;
-};
 
 /**
  * One labelled score with its own definition.
@@ -390,6 +329,7 @@ const GroundingPanel: React.FC<{
 
   const unverified = reports.flatMap((entry) => entry.report.findings.filter((f) => f.kind !== 'fabricated_metric'));
   const redactions = reports.reduce((total, entry) => total + entry.report.redactions.length, 0);
+  const itemsToReview = unverified.length + redactions;
 
   return (
     <div className="rounded-2xl border border-blue-pale bg-blue-wash/60 p-4 space-y-3">
@@ -399,7 +339,11 @@ const GroundingPanel: React.FC<{
           Checked against your uploaded resume
         </h4>
         <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-blue-pale bg-white text-[#1D4ED8]">
-          {unverified.length === 0 && redactions === 0 ? 'No unsupported claims' : `${unverified.length} to review`}
+          {itemsToReview === 0
+            ? 'No unsupported claims'
+            : `${unverified.length} claim${unverified.length === 1 ? '' : 's'} to review${
+                redactions > 0 ? ` · ${redactions} redacted` : ''
+              }`}
         </span>
       </div>
 
@@ -432,7 +376,7 @@ const GroundingPanel: React.FC<{
 };
 
 export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, proPriceInr } = useAuth();
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('calibration');
   const [mobileWorkspaceTab, setMobileWorkspaceTab] = useState<'input' | 'results'>('input');
 
@@ -451,6 +395,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
   // Result States
   const [currentCheck, setCurrentCheck] = useState<ResumeCheck | null>(null);
   const [analysis, setAnalysis] = useState<AtsAnalysis | null>(null);
+  // The candidate's own resume text, echoed by /api/check so the highlighted
+  // preview can be built locally. It is never rewritten — only pointed at.
+  const [sourceResumeText, setSourceResumeText] = useState('');
+  const [exportWithHighlights, setExportWithHighlights] = useState(false);
   const [documentReport, setDocumentReport] = useState<DocumentCheckReport | null>(null);
   const [grounding, setGrounding] = useState<{ resume: GroundingReport; coverLetter: GroundingReport } | null>(null);
   const [tailoredData, setTailoredData] = useState<TailoredResult | null>(null);
@@ -486,6 +434,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const scrollTimerRef = useRef<number | undefined>(undefined);
+
+  useEffect(
+    () => () => {
+      if (scrollTimerRef.current !== undefined) clearTimeout(scrollTimerRef.current);
+    },
+    []
+  );
 
   const addJobModalRef = useDialogA11y(showAddJobModal, () => setShowAddJobModal(false));
 
@@ -540,6 +496,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
       // Document checks are re-measured server-side from the stored resume, so
       // the Intelligence tab still shows real numbers after a reload.
       if (!documentReport && data.documentChecks) setDocumentReport(data.documentChecks);
+      // Same for the preview text: a reload must not blank the highlighter.
+      if (data.latestResume?.parsedText) setSourceResumeText(data.latestResume.parsedText);
     } catch {
       // History is supplementary; a failure here must not block the workspace.
     }
@@ -623,6 +581,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
     setErrorMessage(null);
     setCurrentCheck(null);
     setAnalysis(null);
+    setSourceResumeText('');
     setTailoredData(null);
     setGrounding(null);
     setStarSuggestions([]);
@@ -667,6 +626,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
 
       setCurrentCheck(data.check);
       setAnalysis(data.analysis ?? null);
+      setSourceResumeText(typeof data.resume_text === 'string' ? data.resume_text : '');
       setDocumentReport(data.documentChecks ?? null);
       setStarSuggestions(
         Array.isArray(data.analysis?.starSuggestions)
@@ -682,19 +642,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
       }
 
       // Record the scan in the tracker as a real database row in SAVED state.
+      // The gap count comes from THIS response, not from render-time state —
+      // `missingKeywordCount` still describes the previous scan here.
       if (data.check) {
         await saveTrackedJob({
           company: data.check.company || 'Target Organization',
           role: data.check.job_title || 'Target Role',
           matchScore: data.check.match_score,
-          notes: `${missingKeywordCount || data.check.missing_keywords.length} keyword gap(s) identified in the ATS scan.`,
+          notes: `${data.check.missing_keywords?.length ?? 0} keyword gap(s) identified in the ATS scan.`,
         });
       }
 
       await refreshUser();
       void fetchHistory();
 
-      setTimeout(() => {
+      if (scrollTimerRef.current !== undefined) clearTimeout(scrollTimerRef.current);
+      scrollTimerRef.current = window.setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     } catch (err: unknown) {
@@ -775,7 +738,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
       const res = await fetch('/api/download-docx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ check_id: currentCheck.id }),
+        body: JSON.stringify({
+          check_id: currentCheck.id,
+          include_highlights: exportWithHighlights,
+        }),
         credentials: 'include',
       });
 
@@ -954,22 +920,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
     }
   };
 
+  const firstName = user?.displayName?.trim().split(/\s+/)[0];
+
   return (
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 overflow-x-hidden min-w-0">
       {/* Workspace Header & Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 min-w-0">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-7 min-w-0">
         <div className="min-w-0 flex-1">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-wash/80 border border-blue-pale/60 shadow-2xs mb-2.5">
             <Sparkles className="w-3.5 h-3.5 text-[#1D4ED8]" />
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#1D4ED8]">
-              MicroSaaS Workspace
+              Your job search workspace
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#0B2545] tracking-tight font-['Space_Grotesk'] break-words">
-            Resume Compatibility & Intelligence Suite
+            {firstName ? `Welcome back, ${firstName}` : 'Your resume workspace'}
           </h1>
           <p className="text-xs sm:text-sm text-[#334E68] mt-1">
-            Audit your resume against targeted job criteria, rewrite bullet points with Google STAR, and track applications.
+            Compare your resume with a role, shape a draft, and keep your applications organized.
           </p>
         </div>
 
@@ -981,72 +949,77 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
       </div>
 
       {/* Primary Workspace Navigation Tabs (Smooth Horizontal Swipe Container) */}
-      <div className="flex items-center gap-1.5 p-1.5 rounded-2xl glass-panel !bg-white/60 backdrop-blur-xl border border-white/80 shadow-xs mb-8 flex-nowrap overflow-x-auto scrollbar-none overscroll-x-contain touch-pan-x w-full max-w-full">
+      <nav aria-label="Workspace sections" className="flex items-center gap-1.5 p-1.5 rounded-2xl glass-panel !bg-white/70 backdrop-blur-xl border border-white/80 shadow-xs mb-8 flex-nowrap overflow-x-auto scrollbar-none overscroll-x-contain touch-pan-x w-full max-w-full">
         <button
           type="button"
           onClick={() => setActiveTab('calibration')}
-          className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer flex-shrink-0 whitespace-nowrap shrink-0 ${
+          aria-current={activeTab === 'calibration' ? 'page' : undefined}
+          className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer flex-shrink-0 whitespace-nowrap shrink-0 ${
             activeTab === 'calibration'
               ? 'bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white shadow-md'
               : 'text-[#334E68] hover:text-[#0B2545] hover:bg-white/50'
           }`}
         >
           <Target className="w-3.5 h-3.5 shrink-0" />
-          <span className="whitespace-nowrap">ATS Calibration</span>
+          <span className="whitespace-nowrap">Resume match</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('tailored')}
-          className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer flex-shrink-0 whitespace-nowrap shrink-0 ${
+          aria-current={activeTab === 'tailored' ? 'page' : undefined}
+          className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer flex-shrink-0 whitespace-nowrap shrink-0 ${
             activeTab === 'tailored'
               ? 'bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white shadow-md'
               : 'text-[#334E68] hover:text-[#0B2545] hover:bg-white/50'
           }`}
         >
           <PenLine className="w-3.5 h-3.5 shrink-0" />
-          <span className="whitespace-nowrap">Tailored Resume</span>
+          <span className="whitespace-nowrap">Resume draft</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('cover')}
-          className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer flex-shrink-0 whitespace-nowrap shrink-0 ${
+          aria-current={activeTab === 'cover' ? 'page' : undefined}
+          className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer flex-shrink-0 whitespace-nowrap shrink-0 ${
             activeTab === 'cover'
               ? 'bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white shadow-md'
               : 'text-[#334E68] hover:text-[#0B2545] hover:bg-white/50'
           }`}
         >
           <Mail className="w-3.5 h-3.5 shrink-0" />
-          <span className="whitespace-nowrap">Cover Letter Generator</span>
+          <span className="whitespace-nowrap">Cover letter</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('tracker')}
-          className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer flex-shrink-0 whitespace-nowrap shrink-0 ${
+          aria-current={activeTab === 'tracker' ? 'page' : undefined}
+          className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer flex-shrink-0 whitespace-nowrap shrink-0 ${
             activeTab === 'tracker'
               ? 'bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white shadow-md'
               : 'text-[#334E68] hover:text-[#0B2545] hover:bg-white/50'
           }`}
         >
           <Briefcase className="w-3.5 h-3.5 shrink-0" />
-          <span className="whitespace-nowrap">Application Tracker ({trackedJobs.length})</span>
+          <span className="whitespace-nowrap">Applications <span className="ml-0.5 rounded-full bg-white/15 px-1.5 py-0.5 text-[10px]">{trackedJobs.length}</span></span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('intelligence')}
-          className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer flex-shrink-0 whitespace-nowrap shrink-0 ${
+          aria-current={activeTab === 'intelligence' ? 'page' : undefined}
+          className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer flex-shrink-0 whitespace-nowrap shrink-0 ${
             activeTab === 'intelligence'
               ? 'bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white shadow-md'
               : 'text-[#334E68] hover:text-[#0B2545] hover:bg-white/50'
           }`}
         >
           <BarChart3 className="w-3.5 h-3.5 shrink-0" />
-          <span className="whitespace-nowrap">Resume Intelligence</span>
+          <span className="whitespace-nowrap">Insights</span>
         </button>
-      </div>
+      </nav>
 
       {/* =========================================================================
           TAB 1: ATS CALIBRATION
@@ -1093,7 +1066,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                   {/* Job Description Textarea */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-bold text-[#0B2545] flex items-center gap-1.5 uppercase tracking-wider">
+                      <label
+                        htmlFor="jd-textarea"
+                        className="text-xs font-bold text-[#0B2545] flex items-center gap-1.5 uppercase tracking-wider"
+                      >
                         <Target className="w-3.5 h-3.5 text-[#1D4ED8]" />
                         <span>Target Job Description</span>
                       </label>
@@ -1117,6 +1093,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                     </div>
 
                     <textarea
+                      id="jd-textarea"
                       rows={6}
                       required
                       placeholder="Paste the target job description or requirements here..."
@@ -1293,8 +1270,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                       <span>Unlock Unlimited ATS Tailoring</span>
                     </span>
                     <p className="text-[11px] text-[#334E68]">
-                      Free plan includes {FREE_SCAN_LIMIT} scans per month. Pro adds unlimited tailored
-                      Word (.docx) downloads & cover letters for ₹{PRO_PRICE_INR}/month.
+                      Free plan includes {user?.scanLimit ?? FREE_SCAN_LIMIT} scans per month. Pro adds unlimited tailored
+                      Word (.docx) downloads & cover letters for ₹{proPriceInr}/month.
                     </p>
                   </div>
 
@@ -1303,7 +1280,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                     onClick={onOpenPaywall}
                     className="py-2.5 px-4 rounded-full text-white bg-gradient-to-r from-[#1D4ED8] to-[#2563EB] font-bold text-xs uppercase tracking-wider shadow-xs hover:shadow-md transition-all cursor-pointer shrink-0"
                   >
-                    Upgrade ₹{PRO_PRICE_INR}
+                    Upgrade ₹{proPriceInr}
                   </button>
                 </div>
               )}
@@ -1412,6 +1389,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                         estimated
                       />
                     </div>
+
+                    {/* Score clarity: what each component measures and what moves it */}
+                    {analysis && (
+                      <ScoreExplainer
+                        scoreBreakdown={analysis.scoreBreakdown}
+                        matchedCount={analysis.matchedCount}
+                        requiredCount={analysis.requiredCount}
+                        missingCount={analysis.missingCount}
+                        inputQuality={analysis.inputQuality}
+                      />
+                    )}
 
                     {/* Alignment Summary Callout */}
                     <div>
@@ -1564,6 +1552,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                       </div>
                     </div>
 
+                    {/* HIGHLIGHTED RESUME PREVIEW — presentation only */}
+                    <ResumeHighlightPreview
+                      resumeText={sourceResumeText}
+                      matchedKeywords={analysis?.keywordsMatched ?? []}
+                      missingKeywords={analysis?.keywordsMissing ?? currentCheck.missing_keywords}
+                      jobTitle={currentCheck.job_title}
+                    />
+
                     {/* INTERACTIVE STAR BULLET REWRITER CARD */}
                     <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-blue-wash/80 via-blue-wash/60 to-blue-wash/80 border border-blue-pale/80 shadow-xs space-y-3">
                       <div className="flex items-center justify-between">
@@ -1573,7 +1569,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                             Interactive STAR Bullet Rewriter
                           </h4>
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-[#1D4ED8] border border-blue-pale shadow-2xs">
-                            Google STAR Framework
+                            STAR framework
                           </span>
                         </div>
                         <button
@@ -1711,7 +1707,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                 Unlock Tailored Resume for {currentCheck.job_title || 'Your Target Role'}
               </h3>
               <p className="text-xs sm:text-sm text-[#334E68] leading-relaxed max-w-lg mx-auto">
-                ResumeSetu Pro integrates all {currentCheck.missing_keywords.length} identified keywords into your work history using Google STAR methodology and generates an editable single-column Word (.docx) document.
+                ResumeSetu Pro suggests role-specific edits based on your experience and creates an editable single-column Word (.docx) draft. Review every suggestion before using it.
               </p>
               <div className="pt-2">
                 <button
@@ -1719,7 +1715,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                   onClick={onOpenPaywall}
                   className="py-3.5 px-7 rounded-full font-bold text-xs uppercase tracking-wider text-white bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] hover:from-[#1E40AF] hover:to-[#2563EB] transition-all cursor-pointer shadow-[0_8px_20px_rgba(29,78,216,0.35)] inline-flex items-center gap-2"
                 >
-                  <span>Unlock Tailored Word Document — ₹{PRO_PRICE_INR}/mo</span>
+                  <span>Unlock Tailored Word Document — ₹{proPriceInr}/mo</span>
                   <ArrowRight className="w-4 h-4 text-white" />
                 </button>
               </div>
@@ -1795,6 +1791,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                         {copiedResume ? <CheckCheck className="w-3.5 h-3.5 text-blue-mid" /> : <Copy className="w-3.5 h-3.5" />}
                         <span>{copiedResume ? 'Copied' : 'Copy Text'}</span>
                       </button>
+
+                      <label
+                        className="flex items-center gap-1.5 text-[11px] font-semibold text-[#334E68] cursor-pointer select-none px-2.5 py-2 rounded-xl border border-line bg-white/80 hover:bg-canvas transition-colors"
+                        title="Shade the same phrases the preview highlights. The wording of the document does not change."
+                      >
+                        <input
+                          type="checkbox"
+                          checked={exportWithHighlights}
+                          onChange={(event) => setExportWithHighlights(event.target.checked)}
+                          className="w-3.5 h-3.5 accent-[#1D4ED8] cursor-pointer"
+                        />
+                        <span>Mark matches in Word file</span>
+                      </label>
 
                       <button
                         type="button"
@@ -1902,7 +1911,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                   onClick={onOpenPaywall}
                   className="py-3.5 px-7 rounded-full font-bold text-xs uppercase tracking-wider text-white bg-gradient-to-r from-[#1D4ED8] to-[#2563EB] transition-all cursor-pointer shadow-md inline-flex items-center gap-2"
                 >
-                  <span>Unlock Custom Cover Letters — ₹{PRO_PRICE_INR}/mo</span>
+                  <span>Unlock Custom Cover Letters — ₹{proPriceInr}/mo</span>
                   <ArrowRight className="w-4 h-4 text-white" />
                 </button>
               </div>
@@ -2521,7 +2530,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                       </div>
                       <div className="w-full bg-surface rounded-full h-1.5 overflow-hidden">
                         <div
-                          className="bg-danger-soft0 h-1.5 rounded-full transition-all duration-500"
+                          className="bg-danger h-1.5 rounded-full transition-all duration-500"
                           style={{ width: `${missingShare}%` }}
                         />
                       </div>

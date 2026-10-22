@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MessageCircle, Clock, ShieldCheck } from 'lucide-react';
 
 /**
@@ -174,6 +174,14 @@ export const OwnerProfileCard: React.FC<OwnerProfileCardProps> = ({
  */
 export const PaymentReference: React.FC<{ reference: string }> = ({ reference }) => {
   const [copied, setCopied] = useState(false);
+  const copiedTimerRef = useRef<number | undefined>(undefined);
+
+  useEffect(
+    () => () => {
+      if (copiedTimerRef.current !== undefined) clearTimeout(copiedTimerRef.current);
+    },
+    []
+  );
 
   return (
     <div className="rounded-2xl border border-[#93C5FD]/60 bg-blue-wash/60 p-3.5">
@@ -192,7 +200,8 @@ export const PaymentReference: React.FC<{ reference: string }> = ({ reference })
             try {
               await navigator.clipboard.writeText(reference);
               setCopied(true);
-              window.setTimeout(() => setCopied(false), 2000);
+              if (copiedTimerRef.current !== undefined) clearTimeout(copiedTimerRef.current);
+              copiedTimerRef.current = window.setTimeout(() => setCopied(false), 2000);
             } catch {
               // Clipboard blocked: the code is visible on screen and is already
               // included in the prefilled Telegram message, so this is not fatal.

@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/react';
 import { useUser as useClerkUser } from '@clerk/react';
-import { FREE_SCAN_LIMIT, PRO_UNLIMITED_CREDITS } from '../config.js';
+import { FREE_SCAN_LIMIT, PRO_PRICE_INR, PRO_UNLIMITED_CREDITS } from '../config.js';
 import { User } from '../types/index.js';
 
 export interface AuthIdentity {
@@ -38,6 +38,13 @@ interface AuthContextType {
    * not be created. The dialog offers a retry in this state.
    */
   authBackendDown: boolean;
+  /**
+   * Pro price the server actually charges, from GET /api/payments/config
+   * (admin-editable). The config.ts constant is only the pre-load fallback, so
+   * the number on the paywall can never drift from the number the activation
+   * gate enforces.
+   */
+  proPriceInr: number;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -72,7 +79,11 @@ async function readApiJson(res: Response): Promise<any> {
   }
 }
 
-function toAppUser(record: any, identity?: AuthIdentity | null): User {
+function toAppUser(
+  record: any,
+  identity?: AuthIdentity | null,
+  scanLimit: number = FREE_SCAN_LIMIT
+): User {
   const plan: 'free' | 'pro' = record?.currentPlan?.toUpperCase() === 'PRO' ? 'pro' : 'free';
   const id = record?.id || identity?.uid || 'guest_unknown';
   return {
@@ -84,7 +95,8 @@ function toAppUser(record: any, identity?: AuthIdentity | null): User {
     credits_remaining:
       plan === 'pro'
         ? PRO_UNLIMITED_CREDITS
-        : Math.max(0, FREE_SCAN_LIMIT - (record?.monthlyScansUsed || 0)),
+        : Math.max(0, scanLimit - (record?.monthlyScansUsed || 0)),
+    scanLimit,
     isAnonymous: id.startsWith('guest_'),
     isAdmin: Boolean(record?.isAdmin),
     role: record?.role || (record?.isAdmin ? 'ADMIN' : 'USER'),
@@ -115,6 +127,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
   /*
+   * Admin-configurable free-tier limit, shipped by GET /api/payments/config.
+   * Until it arrives the default from config.ts is used; when it does arrive,
+   * any already-loaded user record is recomputed so the credits shown match
+   * what the server will actually enforce.
+   */
+  const [scanLimit, setScanLimit] = useState(FREE_SCAN_LIMIT);
+  const scanLimitRef = useRef(scanLimit);
+  const userRecordRef = useRef<any>(null);
+  const [proPriceInr, setProPriceInr] = useState(PRO_PRICE_INR);
+
+  const applyUserRecord = useCallback(
+    (record: any, idn?: AuthIdentity | null) => {
+      userRecordRef.current = record ?? null;
+      setUser(record ? toAppUser(record, idn, scanLimitRef.current) : null);
+    },
+    []
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/payments/config', { credentials: 'include', cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const limit = Number(data?.freeTierMonthlyLimit);
+        if (!cancelled && limit > 0 && limit !== scanLimitRef.current) {
+          scanLimitRef.current = limit;
+          setScanLimit(limit);
+          // Recompute an already-loaded free user against the real limit.
+          if (userRecordRef.current) {
+            setUser(toAppUser(userRecordRef.current, null, limit));
+          }
+        }
+        const price = Number(data?.priceInr);
+        if (!cancelled && Number.isFinite(price) && price > 0) setProPriceInr(price);
+      })
+      .catch(() => {
+        // The default limit stays in effect; nothing else to do.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /*
    * Restore an existing ResumeSetu session.
    *
    * The signed httpOnly cookie is what every other endpoint authorises against,
@@ -127,7 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await readApiJson(res);
         if (data?.user) {
-          setUser(toAppUser(data.user));
+          applyUserRecord(data.user);
           setIdentity(null);
           setAuthBackendDown(false);
           return true;
@@ -136,10 +192,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // A failed restore leaves the visitor signed out; it must not throw.
     }
+    userRecordRef.current = null;
     setUser(null);
     setIdentity(null);
     return false;
-  }, []);
+  }, [applyUserRecord]);
 
   /**
    * Exchange a live Clerk session for a ResumeSetu session cookie.
@@ -186,7 +243,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw new Error(data?.error || `Could not finish connecting your account (HTTP ${res.status}).`);
         }
 
-        setUser(toAppUser(data.user));
+        applyUserRecord(data.user);
         setIdentity({
           uid: data.user.id,
           email: data.user.email ?? clerkUser?.primaryEmailAddress?.emailAddress ?? null,
@@ -213,7 +270,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     inFlightSync.current = run;
     return run;
-  }, [getToken, clerk.userId, clerkUser]);
+  }, [getToken, clerk.userId, clerkUser, applyUserRecord]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -245,12 +302,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch('/api/auth/me', { credentials: 'include', cache: 'no-store' });
       if (!res.ok) return;
       const data = await readApiJson(res);
-      if (data?.user) setUser(toAppUser(data.user));
+      if (data?.user) applyUserRecord(data.user);
     } catch {
       // Stale plan/credit numbers are acceptable; replacing a working session
       // with an auth error is not.
     }
-  }, []);
+  }, [applyUserRecord]);
 
   const logout = useCallback(async () => {
     // Sign out of Clerk first, then drop our cookie. If Clerk's call fails we
@@ -261,6 +318,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('resumesetu_guest_uid');
     localStorage.removeItem('resumesetu_active_user');
     syncedClerkUser.current = null;
+    userRecordRef.current = null;
     setUser(null);
     setIdentity(null);
     setAuthBackendDown(false);
@@ -283,7 +341,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
       setUser((prev) =>
-        prev ? { ...prev, plan: 'free', credits_remaining: FREE_SCAN_LIMIT } : null
+        prev
+          ? { ...prev, plan: 'free', credits_remaining: scanLimitRef.current, scanLimit: scanLimitRef.current }
+          : null
       );
       return true;
     } catch {
@@ -331,6 +391,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         clearAuthError,
         refreshUser,
         authBackendDown,
+        proPriceInr,
       }}
     >
       {children}

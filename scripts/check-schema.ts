@@ -17,6 +17,7 @@
  *
  * Safe to run at any time: read-only.
  */
+import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -160,7 +161,7 @@ async function main(): Promise<void> {
       args: { p_user_id: `schema_probe_${Date.now()}`, p_seconds: 0 },
     },
     { name: 'consume_ip_burst_limit', args: { p_key_hash: 'invalid', p_max_requests: 1, p_window_seconds: 60 } },
-    { name: 'record_manual_payment', args: { p_id: 'probe', p_user_id: 'probe', p_amount_inr: 0, p_payment_method: 'invalid', p_transaction_reference: '', p_payment_request_reference: '', p_required_amount_inr: 249, p_note: '', p_recorded_by: 'probe' } },
+    { name: 'record_manual_payment', args: { p_id: 'probe', p_user_id: 'probe', p_amount_inr: 0, p_payment_method: 'invalid', p_transaction_reference: '', p_payment_request_reference: '', p_required_amount_inr: 1, p_note: '', p_recorded_by: 'probe' } },
   ];
   for (const rpc of rpcProbes) {
     const { error } = await supabase.rpc(rpc.name, rpc.args);

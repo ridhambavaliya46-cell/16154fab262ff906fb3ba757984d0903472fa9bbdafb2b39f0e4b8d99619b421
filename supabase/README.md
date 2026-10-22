@@ -18,24 +18,25 @@ The project schema is provisioned by [`migrations/202610020001_initial_schema.sq
 
 Uploads are AES-256-GCM encrypted by the server before being sent to Supabase Storage. The bucket contains ciphertext only. Keep the same `STORAGE_ENCRYPTION_KEY` across deployments; changing it makes previously uploaded documents unreadable.
 
-## Pending Migrations
+## Migrations — Current Status
 
-`npm run db:check` reports whether the live schema matches what the application
-expects and prints the exact SQL for anything outstanding. It is read-only and
-safe to run at any time.
+All migrations shipped in [`migrations/`](migrations/) are **already applied** to
+the configured live project. `npm run db:check` is the source of truth: it is
+read-only, safe to run at any time, and prints the exact SQL for anything
+outstanding (it currently reports "Schema is up to date", including the
+`SAVED` enum value and the runtime RPCs).
 
-The following changes are also required by the current application version:
+The files most often mistaken for still-pending:
 
 - [`202610070001_shared_ip_rate_limits.sql`](migrations/202610070001_shared_ip_rate_limits.sql)
   stores HMAC-hashed IP counters and applies atomic burst limits across
-  serverless instances.
+  serverless instances. **Applied.**
 - [`202610070002_manual_payment_ledger.sql`](migrations/202610070002_manual_payment_ledger.sql)
   records admin-verified receipts and activates Pro after confirmed receipts
-  reach the configured price.
+  reach the configured price. **Applied.**
 
-Apply both in the Supabase SQL Editor before deploying this version. They are
-included in `db:check` and `check:deploy`; the deployment gate will fail while
-they are missing. No SQL values contain user secrets.
+Do not block a deploy on a stale checklist — run `npm run db:check`
+(included in `check:deploy`) and let it decide. No SQL values contain user secrets.
 
 One trap worth knowing if you extend it: **do not probe table existence with
 `head: true`.** In the pinned `@supabase/supabase-js`, a HEAD request against a
@@ -56,7 +57,7 @@ needs a personal access token. Neither is present in this environment.
 To apply a pending migration, paste the SQL that `db:check` prints into
 **Supabase Dashboard -> SQL Editor -> Run**, then re-run `npm run db:check`.
 
-### `202610030001_application_status_saved.sql`
+### `202610030001_application_status_saved.sql` (applied)
 
 Adds the `SAVED` stage to `public.application_status` so the tracker can
 represent a saved-but-not-yet-applied role.
@@ -75,8 +76,9 @@ Two details in that file are deliberate and are asserted by
   stayed missing and the tracker broke with an opaque
   `invalid input value for enum` error.
 
-Until it is applied, tracker writes fail with a message pointing at
-`npm run db:check` rather than a raw database error.
+While it was missing, tracker writes failed with a message pointing at
+`npm run db:check` rather than a raw database error. The migration is applied
+now; `db:check` still guards against it being reverted.
 
 ## Import Existing JSON Data
 

@@ -70,4 +70,6 @@ revoke all on table public.api_rate_limits from public, anon, authenticated;
 revoke all on function public.consume_ip_burst_limit(text, integer, integer) from public, anon, authenticated;
 grant execute on function public.consume_ip_burst_limit(text, integer, integer) to service_role;
 
+notify pgrst, 'reload schema';
+
 commit;

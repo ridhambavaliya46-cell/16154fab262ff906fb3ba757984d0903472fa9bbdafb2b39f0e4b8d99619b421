@@ -43,7 +43,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   const landingProfileRef = useRef<HTMLDivElement>(null);
 
   const isPro = user?.plan === 'pro';
-  const creditsRemaining = user?.credits_remaining ?? FREE_SCAN_LIMIT;
+  // Admin-configurable limit, delivered with the user record; the static
+  // default only applies before the session payload arrives.
+  const scanLimit = user?.scanLimit ?? FREE_SCAN_LIMIT;
+  const creditsRemaining = user?.credits_remaining ?? scanLimit;
   const isWorkspace = currentTab === 'dashboard' || currentTab === 'admin';
   const isAdmin = hasAdminPrivileges(user);
 
@@ -67,13 +70,20 @@ export const Navbar: React.FC<NavbarProps> = ({
   // and silently dropped the scroll on slow frames.
   useEffect(() => {
     if (!pendingAnchor) return;
+    // Both frames are tracked so the inner one can also be cancelled on
+    // unmount — previously only the outer frame was, and the inner scroll
+    // could run after the landing page was gone.
+    let innerFrame: number | undefined;
     const frame = requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
+      innerFrame = requestAnimationFrame(() => {
         scrollTo(pendingAnchor, { offset: -76 });
         setPendingAnchor(null);
       });
     });
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      if (innerFrame !== undefined) cancelAnimationFrame(innerFrame);
+    };
   }, [pendingAnchor, currentTab, scrollTo]);
 
   const handleNavClick = (anchor: string) => {
@@ -120,7 +130,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const userAvatarUrl = identity?.photoURL || user?.photoURL;
 
   return (
-    <header className="glass-panel sticky top-0 z-50 w-full max-w-full overflow-x-clip !bg-white/75 backdrop-blur-2xl border-b border-white/80 shadow-[0_8px_32px_rgba(11,37,69,0.06),inset_0_1px_0_rgba(255,255,255,0.95)] transition-all">
+    <header className="sticky top-0 z-50 w-full max-w-full overflow-x-clip bg-[#FCFCF9]/95 border-b border-[#DFE5E0] shadow-[0_4px_18px_rgba(23,59,54,0.06)] transition-all">
       <div className="max-w-6xl mx-auto px-2.5 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-1.5 sm:gap-3 w-full min-w-0 flex-nowrap">
         {/* Brand Logo & Breadcrumb */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
@@ -163,16 +173,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {/* Single-line, Inline Flex Pill with Fixed Height & Responsive Label */}
-            <div
+            <button
+              type="button"
               onClick={!isPro ? onOpenPaywall : undefined}
+              disabled={isPro}
               className={`inline-flex items-center gap-1 sm:gap-1.5 h-7 px-2 sm:px-3 rounded-full text-[10px] sm:text-xs font-semibold whitespace-nowrap shrink-0 border transition-all select-none ${
-                !isPro ? 'cursor-pointer hover:shadow-xs' : ''
+                !isPro ? 'cursor-pointer hover:shadow-xs' : 'cursor-default'
               } ${
                 isPro
                   ? 'bg-blue-wash text-[#0B2545] border-[#93C5FD]/60'
                   : 'bg-blue-wash text-[#0B2545] border-[#93C5FD]/60'
               }`}
               title={isPro ? 'Pro Active' : 'Click to upgrade'}
+              aria-label={isPro ? 'Pro plan active, unlimited scans' : `Free tier, ${creditsRemaining} of ${scanLimit} scans remaining. Upgrade to Pro.`}
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full shrink-0 ${
@@ -188,11 +201,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ) : (
                   <>
                     <span className="hidden min-[400px]:inline">Free Tier • </span>
-                    <span>{creditsRemaining}/{FREE_SCAN_LIMIT} Scans</span>
+                    <span>{creditsRemaining}/{scanLimit} Scans</span>
                   </>
                 )}
               </span>
-            </div>
+            </button>
 
             {/* Consolidated Interactive Profile Avatar Trigger (NO standalone gear) */}
             <div className="relative shrink-0" ref={workspaceProfileRef}>
@@ -379,15 +392,23 @@ export const Navbar: React.FC<NavbarProps> = ({
               {isSignedIn ? (
                 <div className="flex items-center gap-3">
                   {/* Single-line fixed height pill on landing if signed in */}
-                  <div
+                  <button
+                    type="button"
                     onClick={!isPro ? onOpenPaywall : undefined}
+                    disabled={isPro}
                     className={`inline-flex items-center gap-1 sm:gap-1.5 h-7 px-2.5 sm:px-3 rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap shrink-0 border select-none ${
-                      !isPro ? 'cursor-pointer hover:shadow-xs' : ''
+                      !isPro ? 'cursor-pointer hover:shadow-xs' : 'cursor-default'
                     } ${
                       isPro
                         ? 'bg-blue-wash text-[#0B2545] border-[#93C5FD]/60'
                         : 'bg-blue-wash text-[#0B2545] border-[#93C5FD]/60'
                     }`}
+                    title={isPro ? 'Pro Active' : 'Click to upgrade'}
+                    aria-label={
+                      isPro
+                        ? 'Pro plan active'
+                        : `Free tier, ${creditsRemaining} of ${scanLimit} scans remaining. Upgrade to Pro.`
+                    }
                   >
                     <span
                       className={`w-1.5 h-1.5 rounded-full ${isPro ? 'bg-blue-bright' : 'bg-[#1D4ED8]'}`}
@@ -395,7 +416,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <span className="whitespace-nowrap">
                       {isPro ? 'Pro Active' : `Free Tier • ${creditsRemaining}/${FREE_SCAN_LIMIT} Scans`}
                     </span>
-                  </div>
+                  </button>
 
                   <button
                     onClick={() => {
@@ -414,6 +435,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                       type="button"
                       onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                       className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1D4ED8] to-[#2563EB] text-white flex items-center justify-center text-xs font-bold shadow-xs hover:shadow-md cursor-pointer shrink-0"
+                      aria-label="User profile menu"
+                      aria-expanded={profileDropdownOpen}
                     >
                       {userAvatarUrl ? (
                         <img
@@ -495,9 +518,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {isSignedIn ? 'Workspace' : 'Analyze'}
               </button>
               <button
+                type="button"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-2 rounded-lg text-[#0B2545] hover:bg-surface transition-colors cursor-pointer"
                 aria-label="Toggle Navigation Menu"
+                aria-expanded={mobileMenuOpen}
+                aria-controls="mobile-nav-drawer"
               >
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
@@ -508,7 +534,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Drawer */}
       {!isWorkspace && mobileMenuOpen && (
-        <div className="md:hidden px-4 pt-3 pb-6 border-t border-[#CBD5E1]/80 bg-white/95 backdrop-blur-2xl shadow-xl flex flex-col gap-3 text-sm font-semibold text-[#0B2545]">
+        <div
+          id="mobile-nav-drawer"
+          className="md:hidden px-4 pt-3 pb-6 border-t border-[#CBD5E1]/80 bg-white/95 backdrop-blur-2xl shadow-xl flex flex-col gap-3 text-sm font-semibold text-[#0B2545]"
+        >
           <button
             onClick={() => handleNavClick('#how-it-works')}
             className="text-left py-2 px-3 rounded-lg hover:bg-surface transition-colors"

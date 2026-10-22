@@ -86,4 +86,6 @@ revoke all on function public.record_manual_payment(text, text, integer, text, t
 grant execute on function public.record_manual_payment(text, text, integer, text, text, text, integer, text, text)
   to service_role;
 
+notify pgrst, 'reload schema';
+
 commit;

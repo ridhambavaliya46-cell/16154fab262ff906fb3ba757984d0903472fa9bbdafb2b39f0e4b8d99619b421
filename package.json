@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx server.ts",
     "start": "tsx server.ts",
-    "build": "vite build && tsx scripts/write-headers.ts",
+    "build": "vite build && node --import tsx scripts/write-headers.ts",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
@@ -15,8 +15,8 @@
     "test:server": "node scripts/test-server.mjs",
     "test:all": "npm run lint && npm run test:unit && npm test && npm run test:server",
     "migrate:supabase": "tsx scripts/migrate-json-to-supabase.ts",
-    "check:deploy": "tsx scripts/check-deployment.ts",
-    "db:check": "tsx scripts/check-schema.ts"
+    "check:deploy": "node --import tsx scripts/check-deployment.ts",
+    "db:check": "node --import tsx scripts/check-schema.ts"
   },
   "dependencies": {
     "@clerk/express": "^2.1.75",

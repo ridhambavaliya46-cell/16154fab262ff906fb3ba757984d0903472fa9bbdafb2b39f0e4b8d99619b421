@@ -1,0 +1,225 @@
+RESUMESETU SUPABASE MIGRATIONS
+Run these three sections separately, in order.
+For each section: copy only the SQL between BEGIN SQL and END SQL, paste into Supabase SQL Editor, and click Run.
+Do not run all three sections as one query.
+
+========================================================================
+1 of 3 — application status
+========================================================================
+BEGIN SQL
+-- ---------------------------------------------------------------------------
+-- Application tracker: add the "Saved" lifecycle stage.
+--
+-- WHY
+-- ---
+-- The tracker UI offers Saved -> Applied -> Interview -> Offer -> Rejected, but
+-- `public.application_status` only had four values, so a row could not represent
+-- "I am interested in this role but have not applied yet". The browser papered
+-- over this by keeping the tracker in localStorage, which meant dashboard counts
+-- were per-device and not backed by any record.
+--
+-- `ADD VALUE` is additive: no existing row is rewritten, no column is dropped,
+-- and every pre-existing query keeps working.
+--
+-- HOW TO RUN
+-- ----------
+--   Supabase Dashboard -> SQL Editor -> paste -> Run
+-- or
+--   psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/202610030001_application_status_saved.sql
+--
+-- VERIFY
+--   npm run db:check
+--
+-- DELIBERATE OMISSIONS (do not "fix" these)
+-- --------------------------------------------
+-- * No BEGIN/COMMIT. `ALTER TYPE ... ADD VALUE` is not permitted inside a
+--   transaction block on several PostgreSQL versions the project may run on.
+--   Wrapping it would make the migration fail on those versions.
+-- * No `exception when others then null`. The previous version swallowed every
+--   error, so the migration reported success while changing nothing — the enum
+--   stayed missing and the tracker silently broke. This script now fails loudly.
+-- * No `if not exists` gymnastics beyond IF NOT EXISTS on ADD VALUE itself,
+--   which makes re-running this file a no-op rather than an error.
+-- ---------------------------------------------------------------------------
+
+alter type public.application_status add value if not exists 'SAVED';
+notify pgrst, 'reload schema';
+END SQL
+
+========================================================================
+2 of 3 — shared rate limits
+========================================================================
+BEGIN SQL
+begin;
+
+-- Netlify may run many isolated function instances. Keep burst counters in
+-- Postgres so requests cannot reset their budget by reaching another instance.
+create table if not exists public.api_rate_limits (
+  key_hash text primary key check (key_hash ~ '^[0-9a-f]{64}$'),
+  window_started_at timestamptz not null,
+  request_count integer not null check (request_count > 0),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists api_rate_limits_updated_idx
+  on public.api_rate_limits (updated_at);
+
+alter table public.api_rate_limits enable row level security;
+
+create or replace function public.consume_ip_burst_limit(
+  p_key_hash text,
+  p_max_requests integer,
+  p_window_seconds integer
+)
+returns table (allowed boolean, retry_after_seconds integer)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_now timestamptz := clock_timestamp();
+  v_window_started_at timestamptz;
+  v_request_count integer;
+begin
+  if p_key_hash !~ '^[0-9a-f]{64}$'
+    or p_max_requests < 1
+    or p_window_seconds < 1
+    or p_window_seconds > 3600 then
+    raise exception 'invalid IP rate-limit parameters';
+  end if;
+
+  insert into public.api_rate_limits (key_hash, window_started_at, request_count, updated_at)
+  values (p_key_hash, v_now, 1, v_now)
+  on conflict (key_hash) do update set
+    window_started_at = case
+      when public.api_rate_limits.window_started_at + make_interval(secs => p_window_seconds) <= v_now
+        then v_now
+      else public.api_rate_limits.window_started_at
+    end,
+    request_count = case
+      when public.api_rate_limits.window_started_at + make_interval(secs => p_window_seconds) <= v_now
+        then 1
+      else public.api_rate_limits.request_count + 1
+    end,
+    updated_at = v_now
+  returning public.api_rate_limits.window_started_at, public.api_rate_limits.request_count
+    into v_window_started_at, v_request_count;
+
+  return query select
+    v_request_count <= p_max_requests,
+    greatest(1, ceil(extract(epoch from (v_window_started_at + make_interval(secs => p_window_seconds) - v_now)))::integer);
+
+  -- Opportunistically remove stale hashes so abandoned IPs do not accumulate
+  -- forever. The indexed cleanup runs on roughly one request in one hundred.
+  if random() < 0.01 then
+    delete from public.api_rate_limits
+      where updated_at < v_now - interval '1 day';
+  end if;
+end;
+$$;
+
+revoke all on table public.api_rate_limits from public, anon, authenticated;
+revoke all on function public.consume_ip_burst_limit(text, integer, integer) from public, anon, authenticated;
+grant execute on function public.consume_ip_burst_limit(text, integer, integer) to service_role;
+
+notify pgrst, 'reload schema';
+
+commit;
+END SQL
+
+========================================================================
+3 of 3 — payment ledger
+========================================================================
+BEGIN SQL
+begin;
+
+-- Revenue is recorded only when an admin verifies an actual payment receipt.
+-- A user's PRO plan flag is access state, not accounting data.
+create table if not exists public.manual_payment_records (
+  id text primary key,
+  user_id text not null references public.users(id) on delete restrict,
+  amount_inr integer not null check (amount_inr > 0),
+  payment_method text not null check (payment_method in ('upi', 'bank_transfer', 'cash', 'other')),
+  transaction_reference text not null check (char_length(transaction_reference) between 4 and 128),
+  payment_request_reference text not null check (payment_request_reference ~ '^RSA-([A-Z2-7]{8}|[A-Z2-7]{16})-[A-F0-9]{10}$'),
+  note text not null default '' check (char_length(note) <= 500),
+  recorded_by text not null references public.users(id) on delete restrict,
+  created_at timestamptz not null default now(),
+  constraint manual_payment_transaction_unique unique (payment_method, transaction_reference)
+);
+
+create index if not exists manual_payment_user_created_idx
+  on public.manual_payment_records (user_id, created_at desc);
+create index if not exists manual_payment_created_idx
+  on public.manual_payment_records (created_at desc);
+alter table public.manual_payment_records enable row level security;
+
+create or replace function public.record_manual_payment(
+  p_id text,
+  p_user_id text,
+  p_amount_inr integer,
+  p_payment_method text,
+  p_transaction_reference text,
+  p_payment_request_reference text,
+  p_required_amount_inr integer,
+  p_note text,
+  p_recorded_by text
+)
+returns setof public.manual_payment_records
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_total_received integer;
+begin
+  if p_amount_inr <= 0
+    or p_required_amount_inr <= 0
+    or p_payment_method not in ('upi', 'bank_transfer', 'cash', 'other')
+    or char_length(trim(p_transaction_reference)) not between 4 and 128
+    or p_payment_request_reference !~ '^RSA-([A-Z2-7]{8}|[A-Z2-7]{16})-[A-F0-9]{10}$'
+    or char_length(coalesce(p_note, '')) > 500 then
+    raise exception 'invalid manual payment details';
+  end if;
+
+  if not exists (select 1 from public.users where id = p_user_id)
+    or not exists (select 1 from public.users where id = p_recorded_by and (is_admin or role in ('ADMIN', 'OWNER'))) then
+    raise exception 'payment user or recording admin is invalid';
+  end if;
+
+  -- Serialize receipts for this account so simultaneous partial payments
+  -- cannot both calculate totals from an incomplete snapshot.
+  perform 1 from public.users where id = p_user_id for update;
+
+  insert into public.manual_payment_records (
+    id, user_id, amount_inr, payment_method, transaction_reference,
+    payment_request_reference, note, recorded_by
+  ) values (
+    p_id, p_user_id, p_amount_inr, p_payment_method, trim(p_transaction_reference),
+    p_payment_request_reference, coalesce(p_note, ''), p_recorded_by
+  );
+
+  select coalesce(sum(amount_inr), 0)::integer into v_total_received
+    from public.manual_payment_records
+    where payment_request_reference = p_payment_request_reference
+      and user_id = p_user_id;
+
+  -- Partial receipts are recorded, but Pro only activates after the verified
+  -- total for this signed request reaches the server's current monthly price.
+  if v_total_received >= p_required_amount_inr then
+    update public.users set current_plan = 'PRO' where id = p_user_id;
+  end if;
+  return query select * from public.manual_payment_records where id = p_id;
+end;
+$$;
+
+revoke all on table public.manual_payment_records from public, anon, authenticated;
+revoke all on function public.record_manual_payment(text, text, integer, text, text, text, integer, text, text)
+  from public, anon, authenticated;
+grant execute on function public.record_manual_payment(text, text, integer, text, text, text, integer, text, text)
+  to service_role;
+
+notify pgrst, 'reload schema';
+
+commit;
+END SQL

@@ -146,6 +146,8 @@ export interface JobScan {
   /** True when the stored tailored text came from the local fallback, not a model. */
   tailoredSynthetic?: boolean;
   tailoredNotice?: string;
+  /** The resume this scan was run against, so tailor/export resolve the right document. */
+  resumeId?: string | null;
   createdAt: string;
 }
 
@@ -154,7 +156,7 @@ export interface ApplicationTracker {
   userId: string;
   company: string;
   role: string;
-  matchScore: number;
+  matchScore: number | null;
   status: ApplicationStatus;
   appliedDate: string;
   notes?: string;
@@ -844,15 +846,16 @@ export const db = {
       avgScore = 0;
     }
 
-    // Real total time spent
+    // Real total time spent — users with no recorded pings contribute 0, and an
+    // empty user list reports 0 minutes instead of an invented floor.
     const totalTimeSpentSeconds = users.reduce(
-      (acc, u) => acc + (u.totalTimeSpentSeconds || 600),
+      (acc, u) => acc + (u.totalTimeSpentSeconds || 0),
       0
     );
     const avgSessionDurationMinutes =
       users.length > 0
-        ? Math.max(1, Math.round(totalTimeSpentSeconds / users.length / 60))
-        : 14;
+        ? Math.round(totalTimeSpentSeconds / users.length / 60)
+        : 0;
 
     // Scans by target role distribution
     const scansByRole: Record<string, number> = {};
