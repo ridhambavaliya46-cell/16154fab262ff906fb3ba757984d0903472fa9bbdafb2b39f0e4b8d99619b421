@@ -6,6 +6,9 @@ coverage/
 *.log
 .env*
 !.env.example
+jcode.tar.gz
+keys
+Resumesetu-complete-docs.zip 
 
 # Runtime data stores: contains real user resume text and job descriptions.
 # Exclude contents (not the directory) so seed files can still be re-included.
