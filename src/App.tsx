@@ -9,7 +9,6 @@ import { AdminPanel } from './views/AdminPanel.js';
 import { PaywallModal } from './components/PaywallModal.js';
 import { AuthModal } from './components/AuthModal.js';
 import { DeleteDataModal } from './components/DeleteDataModal.js';
-import { ATSInteractiveBackground } from './components/ATSInteractiveBackground.js';
 
 type Tab = 'landing' | 'dashboard' | 'admin';
 
@@ -115,9 +114,7 @@ function MainApp() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F3] text-[#173B36] flex flex-col font-['IBM_Plex_Sans'] antialiased selection:bg-[#173B36] selection:text-white relative overflow-x-hidden max-w-full w-full">
-      {/* Blueprint Grid Canvas Texture */}
-      <ATSInteractiveBackground />
+    <div className="app-shell min-h-screen bg-canvas text-ink flex flex-col font-['IBM_Plex_Sans'] antialiased selection:bg-[#173B36] selection:text-white relative overflow-x-hidden max-w-full w-full">
 
       {/* Structured Navigation Header */}
       <Navbar
@@ -135,6 +132,7 @@ function MainApp() {
             onScanClick={handleScanClick}
             onOpenPaywall={() => setPaywallOpen(true)}
             onOpenDeleteData={() => setDeleteDataOpen(true)}
+            isSignedIn={hasAccess}
           />
         )}
         {currentTab === 'dashboard' && hasAccess && (
@@ -188,7 +186,7 @@ function MainApp() {
  * buttons silently do nothing.
  */
 const MissingClerkKeyNotice: React.FC = () => (
-  <div className="grid min-h-screen place-items-center bg-[#F7F7F3] p-6 font-['IBM_Plex_Sans'] text-[#173B36]">
+  <div className="app-shell grid min-h-screen place-items-center bg-canvas p-6 font-['IBM_Plex_Sans'] text-ink">
     <div className="w-full max-w-md rounded-2xl border border-[#CBD5E1] bg-white p-6 shadow-xl">
       <h1 className="font-['Space_Grotesk'] text-xl font-extrabold tracking-tight">
         Sign-in is not configured
