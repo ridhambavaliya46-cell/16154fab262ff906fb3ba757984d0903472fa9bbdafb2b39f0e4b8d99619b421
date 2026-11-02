@@ -42,7 +42,7 @@ import { Logo } from './Logo.js';
  */
 const clerkAppearance = {
   variables: {
-    colorPrimary: '#1D4ED8',
+    colorPrimary: '#111111',
     colorBackground: '#FFFFFF',
     colorText: '#0B2545',
     colorTextSecondary: '#334E68',
@@ -68,10 +68,10 @@ const clerkAppearance = {
     },
     headerSubtitle: 'text-xs leading-relaxed text-[#334E68] sm:text-sm',
     formFieldInputWrapper:
-      'rounded-xl border border-[#CBD5E1] bg-[#F7F9FC] focus-within:border-[#1D4ED8] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#1D4ED8]/20',
+      'rounded-xl border border-[#D3D3CF] bg-[#F7F7F5] focus-within:border-[#111111] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#111111]/20',
     formFieldInput: 'text-sm text-[#0B2545]',
     formButtonPrimary:
-      'min-h-11 w-full rounded-xl bg-[#1D4ED8] text-xs font-bold uppercase tracking-wider shadow-xs transition-colors hover:bg-[#1E40AF]',
+      'min-h-11 w-full rounded-xl bg-[#111111] text-xs font-bold uppercase tracking-wider shadow-xs transition-colors hover:bg-[#292929]',
     socialButtonsBlockButton:
       'min-h-11 w-full rounded-xl border border-[#CBD5E1] bg-white text-xs font-bold uppercase tracking-wider text-[#0B2545] shadow-xs transition-colors hover:bg-[#F7F9FC]',
     // The app supplies its own divider and copy, so drop Clerk's.
@@ -141,14 +141,14 @@ export const AuthModal: React.FC = () => {
               type="button"
               onClick={close}
               aria-label="Close sign-in dialog"
-              className="absolute top-3.5 right-3.5 z-10 grid h-9 w-9 cursor-pointer place-items-center rounded-full text-[#627D98] transition-colors hover:bg-[#F2F6FC] hover:text-[#0B2545] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D4ED8]/40"
+              className="absolute top-3.5 right-3.5 z-10 grid h-9 w-9 cursor-pointer place-items-center rounded-full text-[#7B7B7B] transition-colors hover:bg-[#EEEEEC] hover:text-[#111111] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#111111]/40"
             >
               <X className="h-4 w-4" strokeWidth={2.2} />
             </button>
 
             <div className="flex items-center gap-2.5 border-b border-[#E6EDF6] bg-[#F7F9FC] px-5 py-3.5 sm:px-6">
               <Logo className="h-6 w-auto" />
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#1D4ED8]">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#111111]">
                 {isSignUp ? 'Create your account' : 'Secure sign-in'}
               </span>
             </div>
@@ -229,7 +229,7 @@ export const AuthModal: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => switchMode(isSignUp ? 'signin' : 'signup')}
-                  className="cursor-pointer font-bold text-[#1D4ED8] underline underline-offset-2 hover:text-[#1E40AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D4ED8]/40"
+                  className="cursor-pointer font-bold text-[#111111] underline underline-offset-2 hover:text-[#3A3A3A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#111111]/40"
                 >
                   {isSignUp ? 'Sign in' : 'Create an account'}
                 </button>

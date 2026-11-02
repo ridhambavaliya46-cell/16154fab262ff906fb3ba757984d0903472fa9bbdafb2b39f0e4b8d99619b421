@@ -27,54 +27,54 @@ const STAGES: Stage[] = [
   {
     id: 'parse',
     step: '01',
-    title: 'Resume Ingestion',
-    subtitle: 'Extracts clean semantic tokens from messy multi-column PDFs',
+    title: 'Start with your resume',
+    subtitle: 'Choose a PDF or Word file and we’ll read the text for you.',
     icon: FileText,
-    tag: 'Document Normalizer',
-    inputLabel: 'Raw Upload File',
-    inputValue: 'Multi-column tables, graphic bars, or stylized PDF layouts',
-    outputLabel: 'Structured Text Stream',
-    outputValue: 'Single-column structured taxonomy: Experience, Skills, and Education',
-    highlights: ['Bypasses parser-breaking columns', 'Normalizes unicode & phone anchors', 'Preserves chronological headers'],
+    tag: 'Your experience',
+    inputLabel: 'Your resume',
+    inputValue: 'The experience, skills, and education you already shared',
+    outputLabel: 'Easy-to-read details',
+    outputValue: 'Your work history and skills, ready to compare with a role',
+    highlights: ['Your own experience stays yours', 'No achievements are added', 'Your original resume is kept intact'],
   },
   {
     id: 'matrix',
     step: '02',
-    title: 'Job Description Mapping',
-    subtitle: 'Extracts hard technical prerequisites from lengthy job posts',
+    title: 'Choose a job posting',
+    subtitle: 'Paste the role you’re interested in, from any job site.',
     icon: Search,
-    tag: 'Semantic Mapping',
-    inputLabel: 'Target Job Posting',
-    inputValue: 'Job posting copied from any board, including Greenhouse/Lever listings',
-    outputLabel: 'Screening Rubric',
-    outputValue: 'The required terms this posting repeats, ranked by how often they appear',
-    highlights: ['Separates mandatory vs optional', 'Weights senior architectural signals', 'Extracts exact recruiter search tokens'],
+    tag: 'The role you want',
+    inputLabel: 'Job posting',
+    inputValue: 'The responsibilities and experience the employer describes',
+    outputLabel: 'What the role asks for',
+    outputValue: 'Skills and experience mentioned in the posting',
+    highlights: ['Key skills are easy to review', 'Role details stay tied to the posting', 'Nothing is assumed about the employer'],
   },
   {
     id: 'radar',
     step: '03',
-    title: 'Gap Delta Analysis',
-    subtitle: 'Pins missing tokens and scores resume against recruiter rubrics',
+    title: 'See where you fit',
+    subtitle: 'Compare the job with your resume and choose what to work on.',
     icon: Target,
-    tag: '0–100 Blended Score',
-    inputLabel: 'Initial Alignment',
-    inputValue: '46% Raw Match (High automated rejection probability)',
-    outputLabel: 'Calibrated Target',
-    outputValue: 'Estimated alignment only — not tested against any ATS vendor',
-    highlights: ['Missing keywords listed as gaps', 'Keyword coverage and semantic proximity reported separately', 'No invented metrics or verbs'],
+    tag: 'A clear comparison',
+    inputLabel: 'Your resume and the role',
+    inputValue: 'See which skills and experience already come through',
+    outputLabel: 'Your resume match',
+    outputValue: 'A helpful comparison of your documents — never a hiring prediction',
+    highlights: ['See what is already in your resume', 'Review what could be clearer', 'No invented skills or achievements'],
   },
   {
     id: 'compile',
     step: '04',
-    title: 'Single-Column DOCX Export',
-    subtitle: 'Rephrases authentic achievements into single-column Word files',
+    title: 'Prepare your application',
+    subtitle: 'Make a draft you can review, edit, and feel comfortable sending.',
     icon: FileCheck,
-    tag: 'Production File Export',
-    inputLabel: 'Candidate Experience',
-    inputValue: 'Your authentic career history, verified projects, and real metrics',
-    outputLabel: 'Interview-Ready DOCX',
-    outputValue: 'Single-column Microsoft Word (.docx) file and targeted cover letter',
-    highlights: ['Claims checked against your uploaded resume', 'Action-first bullet structure', 'Single-column, table-free Word file'],
+    tag: 'Your editable draft',
+    inputLabel: 'Your experience',
+    inputValue: 'Your career history and the details you can stand behind',
+    outputLabel: 'Resume and cover letter',
+    outputValue: 'Editable Word documents to review before you send',
+    highlights: ['You review every suggestion', 'Your original facts stay intact', 'Make the final version your own'],
   },
 ];
 
@@ -88,13 +88,13 @@ export const AtsPipelineDiagram: React.FC = () => {
         {/* Section Header */}
         <div className="max-w-2xl mb-12 sm:mb-16">
           <p className="text-xs font-semibold uppercase tracking-wider text-[#1D4ED8] mb-2">
-            Automated Workflow
+            A clear, simple process
           </p>
           <h2 className="text-3xl sm:text-4xl font-bold text-[#0B2545] tracking-tight">
-            How The ATS Engine Processes Your Application
+            From your resume to your next application
           </h2>
           <p className="mt-2 text-base text-[#334E68]">
-            A deterministic pipeline moving your resume from initial ingestion to a report you can act on.
+            Add your resume and a job posting. We’ll help you see what fits and what to review.
           </p>
         </div>
 
@@ -137,7 +137,7 @@ export const AtsPipelineDiagram: React.FC = () => {
           })}
         </div>
 
-        {/* Stage Inspection Detail Panel with High Transparency Glassmorphism */}
+        {/* Stage detail panel */}
         <div className="rounded-3xl bg-white/45 backdrop-blur-2xl border border-white/70 p-6 sm:p-8 shadow-[0_20px_50px_-10px_rgba(11,37,69,0.12),inset_0_1px_0_rgba(255,255,255,0.95)]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-surface">
             <div>
@@ -154,7 +154,7 @@ export const AtsPipelineDiagram: React.FC = () => {
 
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-wash border border-blue-pale text-xs text-blue-deep font-medium self-start sm:self-auto">
               <CheckCircle2 className="w-3.5 h-3.5 text-blue-mid" />
-              <span>Verified Single-Column Layout</span>
+                <span>Made for you to review and edit</span>
             </div>
           </div>
 
@@ -163,7 +163,7 @@ export const AtsPipelineDiagram: React.FC = () => {
             {/* Input Box */}
             <div className="md:col-span-5 p-4 rounded-xl bg-canvas border border-line space-y-1.5">
               <span className="text-[11px] font-medium text-ink-faint uppercase tracking-wide block">
-                Input Format
+                Start with
               </span>
               <p className="text-xs font-semibold text-ink">
                 {activeStage.inputLabel}
@@ -179,14 +179,14 @@ export const AtsPipelineDiagram: React.FC = () => {
                 <ArrowRight className="w-4 h-4" />
               </div>
               <span className="text-[11px] text-ink-faint mt-1.5 font-medium">
-                Calibrated
+                Then see
               </span>
             </div>
 
             {/* Output Box */}
             <div className="md:col-span-5 p-4 rounded-xl bg-blue-wash/40 border border-blue-pale space-y-1.5">
               <span className="text-[11px] font-medium text-blue-core uppercase tracking-wide block">
-                Output Deliverable
+                What you get
               </span>
               <p className="text-xs font-semibold text-ink">
                 {activeStage.outputLabel}
@@ -199,7 +199,7 @@ export const AtsPipelineDiagram: React.FC = () => {
 
           {/* Key Stage Verifications */}
           <div className="pt-4 border-t border-surface flex flex-wrap items-center justify-between gap-3">
-            <span className="text-xs font-medium text-ink-faint">Stage verifications:</span>
+            <span className="text-xs font-medium text-ink-faint">Helpful to know:</span>
             <div className="flex flex-wrap items-center gap-2">
               {activeStage.highlights.map((h, i) => (
                 <span

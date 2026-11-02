@@ -32,15 +32,14 @@ export const WordExportMockup: React.FC<{ onScanClick?: () => void }> = ({ onSca
       <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-14">
           <span className="text-xs font-bold uppercase tracking-wider text-blue-core block mb-2">
-            What You Download
+            Your editable resume
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-ink">
-            The Single-Column Document Parsers Read Cleanly
+            A simple layout that keeps things clear
           </h2>
           <p className="mt-3 text-sm sm:text-base text-ink-soft leading-relaxed">
-            Multi-column layouts, text boxes and tables break at the moment an applicant-tracking
-            system flattens your file. Every export is built the plain way on purpose — toggle the
-            parse view to see why.
+            Your draft uses a familiar, easy-to-read layout. Take a look, make any changes you need,
+            and keep the final say on what you send.
           </p>
         </div>
 
@@ -56,7 +55,7 @@ export const WordExportMockup: React.FC<{ onScanClick?: () => void }> = ({ onSca
                   <span className="w-2.5 h-2.5 rounded-full bg-warning/60 inline-block" />
                   <span className="w-2.5 h-2.5 rounded-full bg-blue-core/70 inline-block" />
                   <span className="ml-2 text-[11px] font-mono font-bold text-ink truncate">
-                    a_sharma_resume_tailored.docx
+                    Resume draft · example.docx
                   </span>
                 </div>
                 <span
@@ -67,7 +66,7 @@ export const WordExportMockup: React.FC<{ onScanClick?: () => void }> = ({ onSca
                   }`}
                 >
                   <ScanLine className="w-3 h-3" />
-                  {parseView ? 'Parse view on' : 'Clean view'}
+                    {parseView ? 'Layout notes on' : 'Clean view'}
                 </span>
               </div>
 
@@ -76,7 +75,7 @@ export const WordExportMockup: React.FC<{ onScanClick?: () => void }> = ({ onSca
                 <div className="border-b-2 border-line pb-3">
                   <div className="text-lg font-extrabold text-ink tracking-tight">Ananya Sharma</div>
                   <div className="text-xs font-semibold text-blue-core mt-0.5">
-                    Staff Backend Engineer · Bengaluru
+                    Marketing Coordinator · Bengaluru
                   </div>
                   <div className="text-[11px] text-ink-faint font-mono mt-1">
                     ananya.sharma@example.com · +91 98xxx xxxxx · github.com/asharma
@@ -88,17 +87,15 @@ export const WordExportMockup: React.FC<{ onScanClick?: () => void }> = ({ onSca
                     Experience
                   </div>
                   <div className="text-xs font-bold text-ink">
-                    Payments Platform · Senior Engineer{' '}
+                      Community Market · Marketing Coordinator{' '}
                     <span className="font-normal text-ink-faint">— 2022–Present</span>
                   </div>
                   <ul className="space-y-1 text-[11px] text-ink-soft leading-relaxed list-disc pl-4">
                     <li>
-                      Architected idempotent payment microservices in TypeScript, cutting p99
-                      latency by 38% under 99.99% availability SLAs.
+                      Planned weekly promotions and kept the sales team up to date on campaign progress.
                     </li>
                     <li>
-                      Led PostgreSQL indexing programme that removed the checkout service's two
-                      largest query bottlenecks.
+                      Gathered customer feedback and shared themes with the product team.
                     </li>
                   </ul>
                 </div>
@@ -108,17 +105,17 @@ export const WordExportMockup: React.FC<{ onScanClick?: () => void }> = ({ onSca
                     Skills
                   </div>
                   <p className="text-[11px] text-ink-soft leading-relaxed font-mono">
-                    TypeScript · Node.js · PostgreSQL · Kafka · Kubernetes · AWS ECS · Terraform
+                    Project planning · Campaigns · Customer research · Teamwork
                   </p>
                 </div>
 
-                {/* Parse annotations — only in parse view */}
+                {/* Helpful layout notes — shown only when requested */}
                 {parseView && (
                   <div className="absolute inset-x-5 sm:inset-x-7 bottom-4 space-y-1.5 pointer-events-none">
                     {[
-                      { top: '18%', label: 'Single column — flattens in reading order' },
-                      { top: '46%', label: 'Standard heading, not a text box' },
-                      { top: '72%', label: 'Real bullet list — no tables to mis-join' },
+                      { top: '18%', label: 'One clear reading order' },
+                      { top: '46%', label: 'Familiar section heading' },
+                      { top: '72%', label: 'Simple bullet points' },
                     ].map((note) => (
                       <div
                         key={note.label}
@@ -141,7 +138,7 @@ export const WordExportMockup: React.FC<{ onScanClick?: () => void }> = ({ onSca
               aria-pressed={parseView}
             >
               <Columns className="w-3.5 h-3.5 text-blue-core" />
-              {parseView ? 'Hide parse annotations' : 'Show parse annotations'}
+              {parseView ? 'Hide layout notes' : 'Show layout notes'}
             </button>
           </div>
 
@@ -152,28 +149,28 @@ export const WordExportMockup: React.FC<{ onScanClick?: () => void }> = ({ onSca
                 <FileText className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-ink">Every tailored export includes</h3>
-                <p className="text-[11px] text-ink-faint">Generated from your scan, editable by you</p>
+                <h3 className="text-base font-bold text-ink">A draft you can make your own</h3>
+                <p className="text-[11px] text-ink-faint">Prepared from your resume, editable by you</p>
               </div>
             </div>
 
             <ul className="space-y-3 text-xs text-ink-soft">
               {[
                 {
-                  title: 'Single-column .docx',
-                  body: 'One flowing column, standard headings, no tables or text boxes — the layout most parsers keep intact.',
+                  title: 'A clean Word document',
+                  body: 'A familiar one-column page with clear headings that is easy to read and edit.',
                 },
                 {
-                  title: 'Keyword-aligned rewrite',
-                  body: 'Your own experience, restructured with the STAR formula around the terms this posting asks for.',
+                  title: 'Your experience, clearly told',
+                  body: 'A first draft that brings relevant parts of your real experience forward.',
                 },
                 {
-                  title: 'Matching cover letter',
-                  body: 'A role-aligned first draft in the same voice, with placeholders where only you know the facts.',
+                  title: 'A cover letter for the role',
+                  body: 'A helpful first draft, with details for you to review and complete.',
                 },
                 {
-                  title: 'Honest gaps stay gaps',
-                  body: 'Keywords you never worked with are reported as gaps, never silently written into the document.',
+                  title: 'Your story stays honest',
+                  body: 'Skills and achievements you haven’t shared are never added to your draft.',
                 },
               ].map((item) => (
                 <li key={item.title} className="flex gap-2.5">
@@ -191,8 +188,7 @@ export const WordExportMockup: React.FC<{ onScanClick?: () => void }> = ({ onSca
             <div className="flex items-start gap-2 rounded-xl bg-canvas border border-line px-3 py-2.5 text-[11px] text-ink-soft leading-relaxed">
               <ShieldCheck className="w-4 h-4 text-blue-mid shrink-0 mt-px" />
               <span>
-                ResumeSetu does not submit your file to Greenhouse, Workday or Lever, so no vendor
-                pass rate is claimed — only the document structure is under our control, and it is.
+                ResumeSetu helps you prepare your documents. You choose what to edit, save, and send.
               </span>
             </div>
 

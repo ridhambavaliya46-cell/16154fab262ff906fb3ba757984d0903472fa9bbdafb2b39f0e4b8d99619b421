@@ -158,7 +158,7 @@ const ScoreBar: React.FC<{
           {label}
           {estimated && (
             <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-surface text-[#627D98] border border-line">
-              Estimated
+              Approximate
             </span>
           )}
         </span>
@@ -303,7 +303,7 @@ const CHECK_LABEL: Record<DocumentCheck['status'], string> = {
   pass: 'Pass',
   warn: 'Review',
   fail: 'Fail',
-  not_tested: 'Not tested',
+  not_tested: 'Not checked',
 };
 
 /**
@@ -340,7 +340,7 @@ const GroundingPanel: React.FC<{
         </h4>
         <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-blue-pale bg-white text-[#1D4ED8]">
           {itemsToReview === 0
-            ? 'No unsupported claims'
+            ? 'Nothing to review'
             : `${unverified.length} claim${unverified.length === 1 ? '' : 's'} to review${
                 redactions > 0 ? ` · ${redactions} redacted` : ''
               }`}
@@ -565,7 +565,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
     // second Enter press or an impatient double-tap must not start a second scan.
     if (loading) return;
     if (!user?.id || user.isAnonymous || user.id.startsWith('guest_')) {
-      setErrorMessage('Your account is not connected yet. Please sign in again before scanning.');
+      setErrorMessage('Your account session has ended. Please sign in again to continue.');
       return;
     }
     if (!jobDescription.trim()) {
@@ -573,7 +573,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
       return;
     }
     if (!resumeFile && !sampleType) {
-      setErrorMessage('Please upload your resume file or pick a sample candidate.');
+      setErrorMessage('Choose your resume file or try one of the sample resumes.');
       return;
     }
 
@@ -649,7 +649,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
           company: data.check.company || 'Target Organization',
           role: data.check.job_title || 'Target Role',
           matchScore: data.check.match_score,
-          notes: `${data.check.missing_keywords?.length ?? 0} keyword gap(s) identified in the ATS scan.`,
+          notes: `${data.check.missing_keywords?.length ?? 0} role requirement(s) not found in the resume yet.`,
         });
       }
 
@@ -923,27 +923,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
   const firstName = user?.displayName?.trim().split(/\s+/)[0];
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 overflow-x-hidden min-w-0">
+    <div className="dashboard-view w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 overflow-x-hidden min-w-0">
       {/* Workspace Header & Title */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-7 min-w-0">
         <div className="min-w-0 flex-1">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-wash/80 border border-blue-pale/60 shadow-2xs mb-2.5">
             <Sparkles className="w-3.5 h-3.5 text-[#1D4ED8]" />
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#1D4ED8]">
-              Your job search workspace
+              Your job search, made easier
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#0B2545] tracking-tight font-['Space_Grotesk'] break-words">
             {firstName ? `Welcome back, ${firstName}` : 'Your resume workspace'}
           </h1>
           <p className="text-xs sm:text-sm text-[#334E68] mt-1">
-            Compare your resume with a role, shape a draft, and keep your applications organized.
+            See how your resume fits a role, make thoughtful edits, and keep track of where you’ve applied.
           </p>
         </div>
 
         {historyChecks.length > 0 && (
           <span className="text-xs font-semibold text-[#627D98] hidden md:inline-block shrink-0">
-            {historyChecks.length} checks logged
+            {historyChecks.length} roles reviewed
           </span>
         )}
       </div>
@@ -961,7 +961,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
           }`}
         >
           <Target className="w-3.5 h-3.5 shrink-0" />
-          <span className="whitespace-nowrap">Resume match</span>
+          <span className="whitespace-nowrap">Check my resume</span>
         </button>
 
         <button
@@ -975,7 +975,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
           }`}
         >
           <PenLine className="w-3.5 h-3.5 shrink-0" />
-          <span className="whitespace-nowrap">Resume draft</span>
+          <span className="whitespace-nowrap">Improve my resume</span>
         </button>
 
         <button
@@ -1017,12 +1017,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
           }`}
         >
           <BarChart3 className="w-3.5 h-3.5 shrink-0" />
-          <span className="whitespace-nowrap">Insights</span>
+          <span className="whitespace-nowrap">My progress</span>
         </button>
       </nav>
 
       {/* =========================================================================
-          TAB 1: ATS CALIBRATION
+          TAB 1: RESUME REVIEW
          ========================================================================= */}
       {activeTab === 'calibration' && (
         <div className="space-y-6">
@@ -1038,7 +1038,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                     : 'text-[#334E68]'
                 }`}
               >
-                1. Input Data
+                1. Your details
               </button>
               <button
                 type="button"
@@ -1049,7 +1049,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                     : 'text-[#334E68]'
                 }`}
               >
-                2. Audit Results
+                2. Your results
               </button>
             </div>
           )}
@@ -1071,14 +1071,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                         className="text-xs font-bold text-[#0B2545] flex items-center gap-1.5 uppercase tracking-wider"
                       >
                         <Target className="w-3.5 h-3.5 text-[#1D4ED8]" />
-                        <span>Target Job Description</span>
+                        <span>Job posting</span>
                       </label>
                       <span className="text-[11px] font-semibold text-[#1D4ED8]">Required</span>
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 mb-2.5">
                       <span className="text-[11px] text-[#627D98] self-center mr-1 font-medium">
-                        Quick preset:
+                        Try an example:
                       </span>
                       {PRESET_JOB_DESCRIPTIONS.map((preset) => (
                         <button
@@ -1096,7 +1096,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                       id="jd-textarea"
                       rows={6}
                       required
-                      placeholder="Paste the target job description or requirements here..."
+                      placeholder="Paste the job posting here so we can compare it with your resume."
                       value={jobDescription}
                       onChange={(e) => setJobDescription(e.target.value)}
                       className="w-full p-4 rounded-2xl border border-line/90 bg-canvas/70 focus:bg-white text-[#0B2545] text-xs font-mono focus:outline-none focus:border-[#1D4ED8] focus:ring-2 focus:ring-[#1D4ED8]/20 placeholder:text-[#8DA9C4] transition-all leading-relaxed"
@@ -1108,14 +1108,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-xs font-bold text-[#0B2545] flex items-center gap-1.5 uppercase tracking-wider">
                         <FileText className="w-3.5 h-3.5 text-[#1D4ED8]" />
-                        <span>Resume Document (PDF or DOCX)</span>
+                        <span>Your resume</span>
                       </label>
-                      <span className="text-[11px] text-[#627D98] font-medium">Max 5MB</span>
+                      <span className="text-[11px] text-[#627D98] font-medium">PDF or Word · up to 5 MB</span>
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 mb-2.5">
                       <span className="text-[11px] text-[#627D98] self-center mr-1 font-medium">
-                        Or pick sample:
+                        Or try a sample resume:
                       </span>
                       <button
                         type="button"
@@ -1210,10 +1210,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                             <FileText className="w-5 h-5 text-[#1D4ED8]" strokeWidth={2} />
                           </div>
                           <p className="text-xs font-bold text-[#0B2545]">
-                            {isDragging ? 'Drop resume file here' : 'Click to browse or drag & drop PDF/DOCX'}
+                            {isDragging ? 'Drop your resume here' : 'Choose your resume, or drag it here'}
                           </p>
                           <p className="text-[11px] text-[#627D98]">
-                            Text is extracted from PDF/DOCX; image-only scans may need OCR first.
+                            We’ll read the text in your document. Scanned image files may not be readable.
                           </p>
                         </div>
                       )}
@@ -1250,10 +1250,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                     className="w-full py-4 px-5 rounded-full font-bold text-xs sm:text-sm uppercase tracking-wider text-white bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] hover:from-[#1E40AF] hover:to-[#2563EB] transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-[0_8px_20px_rgba(29,78,216,0.35)]"
                   >
                     {loading ? (
-                      <span>Evaluating resume against job description...</span>
+                      <span>Comparing your resume with the job posting…</span>
                     ) : (
                       <>
-                        <span>Scan Resume Compatibility</span>
+                        <span>See how my resume fits</span>
                         <ArrowRight className="w-4 h-4 text-white" strokeWidth={2} />
                       </>
                     )}
@@ -1267,11 +1267,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                   <div className="space-y-0.5">
                     <span className="text-xs font-bold text-[#0B2545] flex items-center gap-1.5">
                       <Zap className="w-3.5 h-3.5 text-[#1D4ED8]" />
-                      <span>Unlock Unlimited ATS Tailoring</span>
+                      <span>Make more room to improve</span>
                     </span>
                     <p className="text-[11px] text-[#334E68]">
-                      Free plan includes {user?.scanLimit ?? FREE_SCAN_LIMIT} scans per month. Pro adds unlimited tailored
-                      Word (.docx) downloads & cover letters for ₹{proPriceInr}/month.
+                    Your plan includes {user?.scanLimit ?? FREE_SCAN_LIMIT} resume reviews each month. Pro adds more reviews,
+                    editable Word downloads, and cover letters for ₹{proPriceInr}/month.
                     </p>
                   </div>
 
@@ -1299,10 +1299,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                     <Target className="w-6 h-6 text-[#1D4ED8]" />
                   </div>
                   <h3 className="text-lg font-bold text-[#0B2545] font-['Space_Grotesk']">
-                    Awaiting Candidate Profile
+                    Ready when you are
                   </h3>
                   <p className="text-xs sm:text-sm text-[#334E68] max-w-sm mx-auto mt-1.5 leading-relaxed">
-                    Paste a job description on the left and upload your resume to evaluate keyword alignment, gap diagnostics, and match percentage.
+                    Add a job posting and your resume to see what already fits and what you may want to address.
                   </p>
                 </div>
               )}
@@ -1311,11 +1311,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                 <div className="p-6 sm:p-10 text-center rounded-2xl bg-white/60 backdrop-blur-2xl border border-white/80 shadow-[0_12px_32px_rgba(11,37,69,0.06)]">
                   <div className="w-10 h-10 rounded-full border-3 border-[#1D4ED8] border-t-transparent animate-spin mx-auto mb-4" />
                   <h3 className="text-lg font-extrabold text-[#0B2545] font-['Space_Grotesk']">
-                    Calibrating resume against ATS rubrics...
+                    Taking a closer look at your resume…
                   </h3>
                   <p className="text-xs sm:text-sm text-[#334E68] mt-1.5 max-w-sm mx-auto">
-                    Tokenizing your resume, matching it against the job description's required
-                    keywords, and flagging the terms you are missing.
+                    We’re comparing the experience in your resume with the role and finding useful areas to review.
                   </p>
                 </div>
               )}
@@ -1336,11 +1335,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                             }`}
                           >
                             {keywordCoveragePercent >= 75
-                              ? 'High Keyword Coverage'
-                              : 'More Keywords To Review'}
+                              ? 'Good overlap'
+                              : 'Review a few details'}
                           </span>
                           <span className="text-[11px] font-semibold text-[#627D98] bg-surface px-2 py-0.5 rounded-full">
-                            Blended ATS score
+                            A guide, not a prediction
                           </span>
                         </div>
 
@@ -1349,7 +1348,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                         </h3>
                         {currentCheck.company && (
                           <p className="text-xs text-[#627D98] font-medium mt-0.5">
-                            Target: {currentCheck.company}
+                            {currentCheck.company}
                           </p>
                         )}
                       </div>
@@ -1371,19 +1370,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                     */}
                     <div className="space-y-3">
                       <ScoreBar
-                        label="Overall ATS score"
-                        hint="Blended: 55% keyword coverage + 45% semantic proximity. Not a recruiter judgement."
+                        label="Overall resume match"
+                        hint="A guide to how your resume compares with this role. It is not a hiring prediction."
                         value={overallScore}
                       />
                       <ScoreBar
-                        label="Keyword coverage"
-                        hint={`${matchedKeywordCount} of ${requiredKeywordCount} required keywords found in your resume.`}
+                        label="Skills and experience mentioned"
+                        hint={`${matchedKeywordCount} of ${requiredKeywordCount} skills or requirements from the posting appear in your resume.`}
                         value={keywordCoveragePercent}
                         tone="blue"
                       />
                       <ScoreBar
-                        label="Semantic proximity"
-                        hint="Vocabulary overlap between your resume and the job description. Estimates similarity, not interview fit."
+                        label="Similar wording"
+                        hint="How closely the wording in your resume lines up with the job posting. This is not interview fit."
                         value={semanticMatchPercent}
                         tone="steel"
                         estimated
@@ -1404,7 +1403,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                     {/* Alignment Summary Callout */}
                     <div>
                       <h4 className="text-xs font-bold uppercase tracking-wider text-[#0B2545] mb-2">
-                        Alignment Summary
+                        Your resume and this role
                       </h4>
                       <p className="text-xs sm:text-sm text-[#334E68] leading-relaxed bg-canvas/80 p-4 rounded-2xl border border-line/80">
                         {currentCheck.summary}
@@ -1415,7 +1414,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-1">
                       <div className="p-2.5 rounded-xl bg-canvas/90 border border-line/80 text-center">
                         <span className="text-[10px] uppercase font-bold text-[#627D98] block">
-                          Keyword coverage
+                          Job requirements found
                         </span>
                         <span className="text-sm font-extrabold text-[#0B2545]">
                           {matchedKeywordCount}/{requiredKeywordCount}
@@ -1423,7 +1422,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                       </div>
                       <div className="p-2.5 rounded-xl bg-canvas/90 border border-line/80 text-center">
                         <span className="text-[10px] uppercase font-bold text-[#627D98] block">
-                          Skill delta
+                          Relevant skills in your resume
                         </span>
                         <span className="text-sm font-extrabold text-[#0B2545]">
                           {analysis ? `${analysis.skillsMatched.length} matched / ${analysis.skillsMissing.length} missing` : '—'}
@@ -1431,19 +1430,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                       </div>
                       <div className="p-2.5 rounded-xl bg-canvas/90 border border-line/80 text-center">
                         <span className="text-[10px] uppercase font-bold text-[#627D98] block">
-                          ATS parser test
+                          Resume format check
                         </span>
-                        <span className="text-sm font-extrabold text-[#627D98]">Not tested</span>
+                          <span className="text-sm font-extrabold text-[#627D98]">Not checked</span>
                       </div>
                       <div className="p-2.5 rounded-xl bg-canvas/90 border border-line/80 text-center">
                         <span className="text-[10px] uppercase font-bold text-[#627D98] block">
                           Word export
                         </span>
-                        <span className="text-sm font-extrabold text-[#1D4ED8]">Single-column .docx</span>
+                        <span className="text-sm font-extrabold text-[#1D4ED8]">Clear Word draft</span>
                       </div>
                     </div>
 
-                    {/* Raw structured payload, highlighted and copyable */}
+                    {/* Optional technical details for advanced users. */}
                     <div className="pt-1">
                       <button
                         type="button"
@@ -1451,7 +1450,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                         aria-expanded={showRawAnalysis}
                         className="inline-flex cursor-pointer items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#1D4ED8] hover:text-[#1E40AF]"
                       >
-                        <span>{showRawAnalysis ? 'Hide' : 'Show'} raw analysis JSON</span>
+                        <span>{showRawAnalysis ? 'Hide' : 'Show'} technical details</span>
                         <ArrowRight className={`h-3 w-3 transition-transform ${showRawAnalysis ? 'rotate-90' : ''}`} />
                       </button>
                       {showRawAnalysis && analysis && (
@@ -1488,7 +1487,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs font-bold uppercase tracking-wider text-blue-deep flex items-center gap-1.5">
                             <Check className="w-3.5 h-3.5 text-blue-mid" strokeWidth={2.5} />
-                            <span>Matched keywords ({matchedKeywordCount})</span>
+                            <span>Already in your resume ({matchedKeywordCount})</span>
                           </span>
                           <span className="text-[10px] font-semibold text-blue-core text-right">
                             Found in your resume
@@ -1507,13 +1506,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                             ))
                           ) : (
                             <span className="text-xs text-blue-deep italic">
-                              No required keywords from this job description were found in your resume.
+                              We didn’t find these role requirements in your resume yet.
                             </span>
                           )}
                         </div>
                         {analysis && analysis.skillsMatched.length > 0 && (
                           <p className="text-[11px] text-blue-deep">
-                            Tools and technologies matched: {analysis.skillsMatched.join(', ')}
+                            Skills and tools already in your resume: {analysis.skillsMatched.join(', ')}
                           </p>
                         )}
                       </div>
@@ -1523,7 +1522,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs font-bold uppercase tracking-wider text-danger-strong flex items-center gap-1.5">
                             <AlertCircle className="w-3.5 h-3.5 text-danger" />
-                            <span>Missing keyword gaps ({missingKeywordCount})</span>
+                            <span>Not found yet ({missingKeywordCount})</span>
                           </span>
                           <span className="text-[10px] font-semibold text-danger text-right">Gaps, not claims</span>
                         </div>
@@ -1540,13 +1539,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                             ))
                           ) : (
                             <span className="text-xs text-danger-strong italic">
-                              No required keywords from this posting are missing.
+                              Every listed requirement appears in your resume.
                             </span>
                           )}
                         </div>
                         {missingKeywordCount > (analysis?.keywordsMissing.length ?? 0) && (
                           <p className="text-[11px] text-danger-strong">
-                            Showing the {analysis?.keywordsMissing.length} highest-priority gaps of {missingKeywordCount} total.
+                            Showing the {analysis?.keywordsMissing.length} most relevant items out of {missingKeywordCount}.
                           </p>
                         )}
                       </div>
@@ -1566,10 +1565,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                         <div className="flex items-center gap-2">
                           <Sparkles className="w-4 h-4 text-[#1D4ED8]" />
                           <h4 className="text-xs font-bold uppercase tracking-wider text-[#0B2545]">
-                            Interactive STAR Bullet Rewriter
+                            Make your experience clearer
                           </h4>
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-[#1D4ED8] border border-blue-pale shadow-2xs">
-                            STAR framework
+                            Writing guide
                           </span>
                         </div>
                         <button
@@ -1584,7 +1583,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                           }}
                           className="text-[11px] font-bold text-[#1D4ED8] hover:text-[#1E40AF] flex items-center gap-1 cursor-pointer"
                         >
-                          <span>Full Tailored Resume</span>
+                          <span>See my improved resume</span>
                           <ArrowRight className="w-3 h-3" />
                         </button>
                       </div>
@@ -1592,8 +1591,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                       <div className="space-y-2.5">
                         {starSuggestions.length === 0 ? (
                           <p className="text-xs text-[#334E68] italic bg-white/70 border border-blue-wash rounded-xl p-3.5">
-                            No keyword gaps were found for this scan, so there is nothing to close.
-                            If you still want sharper bullets, open the Tailored Resume tab.
+                            We didn’t find any missing role requirements. You can still make your experience easier to understand in the resume editor.
                           </p>
                         ) : (
                           starSuggestions.map((item, idx) => (
@@ -1604,7 +1602,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                                   <span>Existing Bullet</span>
                                 </span>
                                 <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-wash text-[#1D4ED8] border border-blue-pale">
-                                  Gap keyword: {item.keyword}
+                                  Role requirement: {item.keyword}
                                 </span>
                               </div>
                               <p className="text-xs text-[#627D98] italic pl-2.5 border-l-2 border-line">
@@ -1646,7 +1644,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                     {/* Quick Link to Tailored Resume Tab */}
                     <div className="pt-2 border-t border-surface flex items-center justify-between">
                       <span className="text-xs text-[#627D98]">
-                        Ready to incorporate missing keywords?
+                        Want to talk about anything in this list?
                       </span>
                       <button
                         type="button"
@@ -1676,7 +1674,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
       )}
 
       {/* =========================================================================
-          TAB 2: TAILORED RESUME (STAR BULLET REWRITER)
+          TAB 2: RESUME DRAFT
          ========================================================================= */}
       {activeTab === 'tailored' && (
         <div className="space-y-6">
@@ -1684,17 +1682,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
             <div className="p-8 sm:p-14 text-center rounded-3xl bg-white/70 backdrop-blur-2xl border border-white/80 shadow-[0_12px_32px_rgba(11,37,69,0.06)] max-w-xl mx-auto">
               <PenLine className="w-10 h-10 text-[#8DA9C4] mx-auto mb-3" />
               <h3 className="text-lg font-bold text-[#0B2545] font-['Space_Grotesk']">
-                No Resume Evaluated Yet
+                Start with a resume check
               </h3>
               <p className="text-xs sm:text-sm text-[#334E68] mt-1 mb-5">
-                Run an ATS calibration in the first tab to generate tailored STAR bullet points for your target job.
+                Compare your resume with a job posting first. Then you can work on a draft and cover letter.
               </p>
               <button
                 type="button"
                 onClick={() => setActiveTab('calibration')}
                 className="px-6 py-2.5 rounded-full text-white bg-gradient-to-r from-[#1D4ED8] to-[#2563EB] font-bold text-xs uppercase tracking-wider shadow-xs hover:shadow-md cursor-pointer"
               >
-                Go to ATS Calibration
+                Check my resume
               </button>
             </div>
           ) : !isPro ? (
@@ -1704,7 +1702,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                 <Sparkles className="w-6 h-6 text-[#1D4ED8]" />
               </div>
               <h3 className="text-2xl font-extrabold text-[#0B2545] font-['Space_Grotesk']">
-                Unlock Tailored Resume for {currentCheck.job_title || 'Your Target Role'}
+                Improve your resume for {currentCheck.job_title || 'this role'}
               </h3>
               <p className="text-xs sm:text-sm text-[#334E68] leading-relaxed max-w-lg mx-auto">
                 ResumeSetu Pro suggests role-specific edits based on your experience and creates an editable single-column Word (.docx) draft. Review every suggestion before using it.
@@ -1715,7 +1713,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                   onClick={onOpenPaywall}
                   className="py-3.5 px-7 rounded-full font-bold text-xs uppercase tracking-wider text-white bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] hover:from-[#1E40AF] hover:to-[#2563EB] transition-all cursor-pointer shadow-[0_8px_20px_rgba(29,78,216,0.35)] inline-flex items-center gap-2"
                 >
-                  <span>Unlock Tailored Word Document — ₹{proPriceInr}/mo</span>
+                  <span>Get ResumeSetu Pro — ₹{proPriceInr}/month</span>
                   <ArrowRight className="w-4 h-4 text-white" />
                 </button>
               </div>
@@ -1727,10 +1725,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                 <div className="p-8 sm:p-12 rounded-3xl text-center bg-white/70 backdrop-blur-2xl border border-white/80 shadow-[0_12px_32px_rgba(11,37,69,0.06)] max-w-xl mx-auto space-y-4">
                   <PenLine className="w-10 h-10 text-[#1D4ED8] mx-auto" />
                   <h3 className="text-xl font-bold text-[#0B2545] font-['Space_Grotesk']">
-                    Generate Tailored Resume Copy
+                    Create a first draft
                   </h3>
                   <p className="text-xs sm:text-sm text-[#334E68] max-w-md mx-auto">
-                    Transform your experience bullets to incorporate missing tokens and align directly with recruiter rubrics.
+                    Get suggestions based on your real experience and the role. You’ll review every change before using it.
                   </p>
                   <button
                     type="button"
@@ -1742,7 +1740,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                       <span>Tailoring resume bullets...</span>
                     ) : (
                       <>
-                        <span>Generate Tailored Resume</span>
+                        <span>Prepare my resume draft</span>
                         <ArrowRight className="w-4 h-4 text-white" />
                       </>
                     )}
@@ -1755,19 +1753,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-wash text-[#1D4ED8] border border-blue-pale">
-                          Grounded rewrite
+                          Based on your experience
                         </span>
                         <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-surface text-[#334E68] border border-line">
-                          Source scan {keywordCoveragePercent}% keyword coverage
+                          Role requirements found in your resume: {keywordCoveragePercent}%
                         </span>
                         {tailoredData?.synthetic && (
                           <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-warning-soft text-warning border border-warning-border">
-                            Local fallback — no model ran
+                            Starter outline — review before using
                           </span>
                         )}
                       </div>
                       <h3 className="text-lg font-bold text-[#0B2545]">
-                        Tailored Resume Text
+                        Your resume draft
                       </h3>
                     </div>
 
@@ -1802,7 +1800,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                           onChange={(event) => setExportWithHighlights(event.target.checked)}
                           className="w-3.5 h-3.5 accent-[#1D4ED8] cursor-pointer"
                         />
-                        <span>Mark matches in Word file</span>
+                        <span>Highlight matching skills in Word</span>
                       </label>
 
                       <button
@@ -1812,15 +1810,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                         className="px-4 py-2 rounded-full text-white bg-gradient-to-r from-[#1D4ED8] to-[#2563EB] font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                       >
                         <Download className="w-3.5 h-3.5 text-white shrink-0" />
-                        <span>{downloadingDocx ? 'Generating…' : 'Word (.docx)'}</span>
+                        <span>{downloadingDocx ? 'Preparing…' : 'Download Word file'}</span>
                       </button>
                     </div>
                   </div>
 
                   {!currentCheck.tailored_resume_text && (
                     <p className="rounded-xl border border-warning-border bg-warning-soft px-3 py-2.5 text-xs text-warning">
-                      Nothing has been generated for this scan yet, so there is no Word file to
-                      download. ResumeSetu will not build one out of your missing keywords.
+                      Your draft is not ready to download yet. ResumeSetu will never add skills or achievements you haven’t shared.
                     </p>
                   )}
 
@@ -1828,15 +1825,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
 
                   {tailoredData?.synthetic && (
                     <p className="rounded-xl border border-warning-border bg-warning-soft px-3 py-2.5 text-xs text-warning">
-                      No AI provider responded, so your original resume text is shown unchanged
-                      plus a checklist. Nothing was rewritten and no content was invented.
+                      We couldn’t prepare a new draft just now. Your original resume is still here; no details were changed or added.
                     </p>
                   )}
 
                   {isEditingResume ? (
                     <div className="space-y-2">
                       <label htmlFor="tailored-resume-editor" className="text-[11px] font-bold uppercase tracking-wider text-[#627D98]">
-                        Editable draft — changes stay in this browser until you copy or download
+                        Your editable draft — copy or download it to keep your changes
                       </label>
                       <textarea
                         id="tailored-resume-editor"
@@ -1875,7 +1871,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
       )}
 
       {/* =========================================================================
-          TAB 3: COVER LETTER GENERATOR
+          TAB 3: COVER LETTER
          ========================================================================= */}
       {activeTab === 'cover' && (
         <div className="space-y-6">
@@ -1883,27 +1879,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
             <div className="p-6 sm:p-10 text-center rounded-2xl bg-white/70 backdrop-blur-2xl border border-white/80 shadow-[0_12px_32px_rgba(11,37,69,0.06)] max-w-xl mx-auto">
               <Mail className="w-10 h-10 text-[#8DA9C4] mx-auto mb-3" />
               <h3 className="text-lg font-bold text-[#0B2545] font-['Space_Grotesk']">
-                No Application Selected
+                Choose a role first
               </h3>
               <p className="text-xs sm:text-sm text-[#334E68] mt-1 mb-5">
-                Run an initial ATS calibration in the first tab to generate a targeted cover letter matching this role.
+                Check your resume against a job posting first, then come back to prepare your cover letter.
               </p>
               <button
                 type="button"
                 onClick={() => setActiveTab('calibration')}
                 className="px-6 py-2.5 rounded-full text-white bg-gradient-to-r from-[#1D4ED8] to-[#2563EB] font-bold text-xs uppercase tracking-wider shadow-xs hover:shadow-md cursor-pointer"
               >
-                Start with ATS Calibration
+                Check my resume
               </button>
             </div>
           ) : !isPro ? (
             <div className="p-5 sm:p-8 rounded-2xl bg-white/70 backdrop-blur-2xl border border-blue-pale/80 shadow-[0_12px_32px_rgba(29,78,216,0.08)] max-w-2xl mx-auto space-y-4 text-center">
               <Mail className="w-10 h-10 text-[#1D4ED8] mx-auto mb-2" />
               <h3 className="text-2xl font-extrabold text-[#0B2545] font-['Space_Grotesk']">
-                Role-Specific Cover Letter Generator
+                A cover letter for this role
               </h3>
               <p className="text-xs sm:text-sm text-[#334E68] leading-relaxed max-w-md mx-auto">
-                Craft a tailored, non-generic cover letter that highlights your exact qualification match for {currentCheck.company || 'the hiring team'}.
+                Start a cover letter for {currentCheck.company || 'this role'} using the details in your resume. You can review and edit it before sending.
               </p>
               <div className="pt-2">
                 <button
@@ -1922,13 +1918,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-wash text-[#1D4ED8] border border-blue-pale">
-                      Role-Specific Narrative
+                      Your cover letter draft
                     </span>
                     {tailoredData ? (
                       <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-surface text-[#334E68] border border-line">
                         {tailoredData.cover_letter_synthetic ?? tailoredData.synthetic
-                          ? 'Local outline — no model ran'
-                          : 'AI-generated draft'}
+                          ? 'Starter outline — for you to finish'
+                          : 'Ready for your review'}
                       </span>
                     ) : (
                       <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-surface text-[#627D98] border border-line">
@@ -1978,9 +1974,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
               {!tailoredData ? (
                 <div className="space-y-4">
                   <div className="text-xs sm:text-sm text-[#334E68] bg-canvas/70 p-5 rounded-2xl border border-line/80 leading-relaxed">
-                    No cover letter has been generated for this role. ResumeSetu only shows a
-                    letter once one has actually been written from your own resume — open the
-                    Tailored Resume tab and generate it.
+                    Your cover letter hasn’t been prepared yet. Create a resume draft first, then come back to write one for this role.
                   </div>
                   <button
                     type="button"
@@ -1997,8 +1991,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
               ) : !coverLetterText ? (
                 <div className="text-xs sm:text-sm text-[#334E68] bg-canvas/70 p-5 rounded-2xl border border-line/80 leading-relaxed">
                   The resume was generated but no cover letter came back from the model, so there
-                  is nothing to show. Retry the generation, or write it yourself using the keyword
-                  gaps listed on the ATS Calibration tab.
+                  is nothing to show. Try preparing the draft again, or write your cover letter yourself using the job posting as a guide.
                 </div>
               ) : (
                 <>
@@ -2109,7 +2102,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                   <Briefcase className="w-6 h-6 text-[#1D4ED8]" />
                 </div>
                 <h3 className="text-lg font-bold text-[#0B2545] font-['Space_Grotesk']">
-                  No Applications Tracked Yet
+                  Your application list is ready
                 </h3>
                 <p className="text-xs sm:text-sm text-[#334E68] max-w-md mx-auto mt-1.5 leading-relaxed">
                   Nothing has been saved to your account yet. Every scan you run is added here
@@ -2183,7 +2176,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                           Role & Company
                         </th>
                         <th scope="col" className="py-3.5 px-4">
-                          ATS score
+                          Resume match
                         </th>
                         <th scope="col" className="py-3.5 px-4">
                           Status
@@ -2322,8 +2315,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                         className="w-full p-2.5 rounded-xl border border-line bg-canvas focus:bg-white text-[#0B2545]"
                       />
                       <p className="mt-1.5 text-[11px] text-[#627D98]">
-                        No ATS score is invented for this row — it stays blank until a real scan
-                        supplies one.
+                        A resume match appears here after you review this role with your resume.
                       </p>
                     </div>
                     {trackerError && (
@@ -2356,18 +2348,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
         </div>
       )}
       {/* =========================================================================
-          TAB 5: RESUME INTELLIGENCE & ATS AUDIT METRICS
+          TAB 5: YOUR PROGRESS
          ========================================================================= */}
       {activeTab === 'intelligence' && (
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-bold font-['Space_Grotesk'] text-[#0B2545]">
-                Resume Intelligence & Deep Diagnostic
+                Your job search progress
               </h2>
               <p className="text-xs sm:text-sm text-[#334E68] mt-0.5">
-                Every figure below is computed from your own scan history. Diagnostics the engine does
-                not yet measure are labelled instead of estimated.
+                A simple overview of the roles you’ve reviewed and how your resume compares with each one.
               </p>
             </div>
           </div>
@@ -2378,18 +2369,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                 <BarChart3 className="w-6 h-6 text-[#1D4ED8]" />
               </div>
               <h3 className="text-lg font-bold text-[#0B2545] font-['Space_Grotesk']">
-                No Scan Data Yet
+                Your progress will show here
               </h3>
               <p className="text-xs sm:text-sm text-[#334E68] max-w-sm mx-auto mt-1.5 leading-relaxed">
-                These diagnostics are calculated from real scans. Run an ATS Calibration to generate
-                your first report.
+                Review your resume against a job posting to see your first comparison.
               </p>
               <button
                 type="button"
                 onClick={() => setActiveTab('calibration')}
                 className="mt-5 px-6 py-2.5 rounded-full text-white bg-gradient-to-r from-[#1D4ED8] to-[#2563EB] font-bold text-xs uppercase tracking-wider shadow-xs hover:shadow-md cursor-pointer"
               >
-                Run a Scan
+                Check my resume
               </button>
             </div>
           ) : (
@@ -2399,16 +2389,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                 <div className="glass-panel p-4 sm:p-6 rounded-2xl !bg-white/70 backdrop-blur-2xl border border-white/80 shadow-xs space-y-3 lg:col-span-1">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-xs font-bold text-[#1D4ED8] uppercase tracking-wider">
-                      Your Scan Record
+                      Your resume reviews
                     </span>
                     <span className="text-xs font-bold text-[#0B2545] font-['Space_Grotesk']">
-                      {historyChecks.length} scan{historyChecks.length === 1 ? '' : 's'}
+                      {historyChecks.length} review{historyChecks.length === 1 ? '' : 's'}
                     </span>
                   </div>
                   <div className="space-y-3">
                     <div className="p-3.5 rounded-xl bg-canvas/90 border border-line/80">
                       <span className="text-[10px] uppercase font-bold text-[#627D98] block">
-                        Scans performed
+                        Roles reviewed
                       </span>
                       <span className="text-2xl font-extrabold text-[#0B2545] font-['Space_Grotesk'] block tabular-nums">
                         {historyChecks.length}
@@ -2416,7 +2406,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                     </div>
                     <div className="p-3.5 rounded-xl bg-canvas/90 border border-line/80">
                       <span className="text-[10px] uppercase font-bold text-[#627D98] block">
-                        Average blended score
+                        Average resume match
                       </span>
                       <span className="text-2xl font-extrabold text-[#0B2545] font-['Space_Grotesk'] block tabular-nums">
                         {averageMatchScore === null ? 'Not available' : `${averageMatchScore}%`}
@@ -2424,7 +2414,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                     </div>
                     <div className="p-3.5 rounded-xl bg-canvas/90 border border-line/80">
                       <span className="text-[10px] uppercase font-bold text-[#627D98] block">
-                        Best blended score
+                        Strongest resume match
                       </span>
                       <span className="text-2xl font-extrabold text-[#0B2545] font-['Space_Grotesk'] block tabular-nums">
                         {bestMatchScore === null ? 'Not available' : `${bestMatchScore}%`}
@@ -2444,43 +2434,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                 <div className="glass-panel p-4 sm:p-6 rounded-2xl !bg-white/70 backdrop-blur-2xl border border-white/80 shadow-xs space-y-3 lg:col-span-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="text-base font-bold text-[#0B2545]">
-                      Diagnostics ResumeSetu does not compute
+                      What this comparison can and can’t tell you
                     </h3>
                     <span className="text-xs font-bold text-[#627D98] bg-surface px-2.5 py-0.5 rounded-full border border-line">
-                      Not measured
+                      Not part of this review
                     </span>
                   </div>
                   <ul className="space-y-2 text-xs text-[#334E68] leading-relaxed">
                     <li className="flex gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-line-steel shrink-0 mt-1.5" />
                       <span>
-                        <strong className="font-bold text-[#0B2545]">OCR / scan quality.</strong> Not
-                        scored. ResumeSetu only checks whether a selectable text layer exists and how
-                        many words it yields — see Text extraction under Document Checks.
+                        <strong className="font-bold text-[#0B2545]">Document readability.</strong>{' '}
+                        We check that the file contains readable text. We do not judge your writing style.
                       </span>
                     </li>
                     <li className="flex gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-line-steel shrink-0 mt-1.5" />
                       <span>
-                        <strong className="font-bold text-[#0B2545]">Impact verb ratio.</strong> Not
-                        scored. The engine compares keywords, not writing style, so it does not judge
-                        passive or executive verbs in your bullets.
+                        <strong className="font-bold text-[#0B2545]">How your writing sounds.</strong>{' '}
+                        The comparison doesn’t rate your tone or writing style.
                       </span>
                     </li>
                     <li className="flex gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-line-steel shrink-0 mt-1.5" />
                       <span>
-                        <strong className="font-bold text-[#0B2545]">Quantified metrics per role.</strong>{' '}
-                        Not scored. Counting numbers reliably would mean guessing what your bullets are
-                        claiming, so ResumeSetu does not produce this figure.
+                        <strong className="font-bold text-[#0B2545]">The truth of your work history.</strong>{' '}
+                        Only you know whether every detail accurately describes your experience.
                       </span>
                     </li>
                     <li className="flex gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-line-steel shrink-0 mt-1.5" />
                       <span>
-                        <strong className="font-bold text-[#0B2545]">Third-party ATS parser result.</strong>{' '}
-                        Not tested. Nothing is submitted to Greenhouse, Workday, Taleo or Lever, so there
-                        is no parser pass/fail to report.
+                        <strong className="font-bold text-[#0B2545]">An employer’s hiring decision.</strong>{' '}
+                        Your resume is not sent to employers or hiring systems, and this score cannot predict their decision.
                       </span>
                     </li>
                   </ul>
@@ -2491,19 +2477,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
               {/* Keyword balance, derived from the current scan only */}
               <div className="glass-panel p-4 sm:p-6 rounded-2xl !bg-white/70 backdrop-blur-2xl border border-white/80 shadow-[0_12px_32px_rgba(11,37,69,0.06)] space-y-4">
                 <h3 className="text-base font-bold text-[#0B2545] font-['Space_Grotesk']">
-                  Keyword Balance — {currentCheck?.job_title || 'Latest Scan'}
+                  Skills and experience for {currentCheck?.job_title || 'your latest role'}
                 </h3>
                 {!analysis ? (
                   <p className="text-xs text-[#334E68] italic">
                     {currentCheck
-                      ? 'This scan predates per-keyword counters, so only the blended score is available for it. Run the scan again for the matched/missing breakdown.'
-                      : 'Run a scan to see this breakdown.'}
+                      ? 'This earlier review includes a total match, but not a skills breakdown. Review the role again to see more detail.'
+                      : 'Review a role to see this breakdown.'}
                   </p>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-4 rounded-2xl bg-white/80 border border-line/80 space-y-2">
                       <div className="flex flex-wrap justify-between items-center gap-2 text-xs font-bold text-[#0B2545]">
-                        <span>Keywords matched</span>
+                        <span>Already in your resume</span>
                         <span className="text-[#1D4ED8] tabular-nums">
                           {matchedKeywordCount} of {requiredKeywordCount} · {keywordCoveragePercent}%
                         </span>
@@ -2517,13 +2503,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                       <p className="text-xs text-[#627D98] break-words">
                         {matchedKeywordCount > 0
                           ? analysis.keywordsMatched.join(', ')
-                          : 'No required keywords from this job description were found in your resume.'}
+                          : 'We didn’t find these role requirements in your resume yet.'}
                       </p>
                     </div>
 
                     <div className="p-4 rounded-2xl bg-white/80 border border-line/80 space-y-2">
                       <div className="flex flex-wrap justify-between items-center gap-2 text-xs font-bold text-[#0B2545]">
-                        <span>Missing keyword gaps</span>
+                        <span>Worth reviewing</span>
                         <span className="text-danger tabular-nums">
                           {missingKeywordCount} of {requiredKeywordCount} · {Math.round(missingShare)}%
                         </span>
@@ -2537,7 +2523,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                       <p className="text-xs text-[#627D98] break-words">
                         {missingKeywordCount > 0
                           ? analysis.keywordsMissing.join(', ')
-                          : 'No required keywords are missing from this job description.'}
+                          : 'Every listed requirement appears in your resume.'}
                       </p>
                     </div>
                   </div>
@@ -2555,11 +2541,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
               <div className="glass-panel p-4 sm:p-6 rounded-2xl !bg-white/70 backdrop-blur-2xl border border-white/80 shadow-xs space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-base font-bold text-[#0B2545] font-['Space_Grotesk']">
-                    Document Checks
+                    A quick document check
                   </h3>
                   <span className="text-[11px] font-semibold text-[#627D98]">
-                    {documentReport
-                      ? `${documentReport.measuredCount} measured · ${documentReport.notTestedCount} not tested${
+                      {documentReport
+                      ? `${documentReport.measuredCount} checked · ${documentReport.notTestedCount} not checked${
                           documentReport.sourceName ? ` · ${documentReport.sourceName}` : ''
                         }`
                       : 'Nothing measured yet'}
@@ -2568,8 +2554,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
 
                 {!documentReport ? (
                   <p className="text-xs text-[#334E68] italic">
-                    No document has been measured yet. Upload a resume on the ATS Calibration tab and
-                    ResumeSetu will check it.
+                    Upload your resume in Check my resume to see a few helpful document details.
                   </p>
                 ) : (
                   <div className="space-y-2.5">
@@ -2588,7 +2573,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenPaywall }) => {
                             }`}
                           >
                             {CHECK_LABEL[check.status]}
-                            {check.estimated ? ' · Estimated' : ''}
+                            {check.estimated ? ' · Approximate' : ''}
                           </span>
                         </div>
                         <p className="text-xs text-[#334E68] leading-relaxed break-words">{check.detail}</p>

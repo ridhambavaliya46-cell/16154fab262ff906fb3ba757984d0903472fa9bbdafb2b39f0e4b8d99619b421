@@ -54,7 +54,7 @@ export const ResumeHighlightPreview: React.FC<ResumeHighlightPreviewProps> = ({
   if (!resumeText.trim()) {
     return (
       <div className="rounded-2xl border border-line/80 bg-canvas/70 p-4 text-xs text-[#627D98]">
-        Your resume text will appear here after a scan.
+        Your resume preview will appear here after a review.
       </div>
     );
   }
@@ -66,9 +66,9 @@ export const ResumeHighlightPreview: React.FC<ResumeHighlightPreviewProps> = ({
   const categoriesPresent = [...new Set(built.highlights.map((h) => h.category))];
 
   const legend: { category: ResumeHighlightCategory; label: string; swatch: string }[] = [
-    { category: 'tool', label: 'Tool / technology', swatch: 'bg-[#BFDBFE]' },
+    { category: 'tool', label: 'Tools and technology', swatch: 'bg-[#BFDBFE]' },
     { category: 'skill', label: 'Skill', swatch: 'bg-[#C7D2FE]' },
-    { category: 'keyword', label: 'Role keyword', swatch: 'bg-[#FDE68A]' },
+    { category: 'keyword', label: 'Role requirement', swatch: 'bg-[#FDE68A]' },
     { category: 'certification', label: 'Certification', swatch: 'bg-[#BBF7D0]' },
     { category: 'achievement', label: 'Quantified achievement', swatch: 'bg-[#99F6E4]' },
     { category: 'responsibility', label: 'Leadership', swatch: 'bg-[#FECDD3]' },
@@ -84,12 +84,11 @@ export const ResumeHighlightPreview: React.FC<ResumeHighlightPreviewProps> = ({
         <div className="min-w-0">
           <h4 className="text-xs font-bold uppercase tracking-wider text-[#0B2545] flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-[#1D4ED8]" aria-hidden />
-            Your resume as this posting's checklist sees it
+            What stands out for this role
           </h4>
           <p className="text-xs text-[#627D98] mt-1 max-w-xl">
             {jobTitle ? `Matches for ${jobTitle}. ` : ''}
-            Every mark points at wording that is already in your file — nothing is rewritten, and
-            missing keywords stay unmarked because there is no text to point at.
+            Highlights point to skills and experience already in your resume. Nothing is rewritten here.
           </p>
         </div>
 
@@ -106,7 +105,7 @@ export const ResumeHighlightPreview: React.FC<ResumeHighlightPreviewProps> = ({
               mode === 'normal' ? 'bg-white text-[#0B2545] shadow-sm' : 'text-[#627D98] hover:text-[#334E68]'
             }`}
           >
-            Normal Preview
+              Original resume
           </button>
           <button
             type="button"
@@ -118,7 +117,7 @@ export const ResumeHighlightPreview: React.FC<ResumeHighlightPreviewProps> = ({
                 : 'text-[#627D98] hover:text-[#334E68]'
             }`}
           >
-            Highlighted Preview
+              Show highlights
           </button>
         </div>
       </div>
@@ -128,8 +127,8 @@ export const ResumeHighlightPreview: React.FC<ResumeHighlightPreviewProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-surface">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#627D98]">
               {mode === 'highlighted'
-                ? `${visibleCount} of ${built.highlights.length} matches marked`
-                : 'Plain text — no marks'}
+                ? `${visibleCount} highlights shown`
+                : 'Original resume text'}
             </span>
             {mode === 'highlighted' && built.hiddenBySelectivity > 0 && (
               <span className="text-[10px] font-semibold text-[#627D98] bg-surface px-2 py-0.5 rounded-full">
@@ -140,8 +139,7 @@ export const ResumeHighlightPreview: React.FC<ResumeHighlightPreviewProps> = ({
 
           {mode === 'highlighted' && built.highlights.length === 0 && (
             <p className="text-xs text-[#627D98] mb-3 bg-canvas/80 border border-line/80 rounded-xl px-3 py-2">
-              No term from this job description appears in your resume yet — that gap is shown in the
-              missing-keywords list instead of being invented here.
+              We didn’t find these role requirements in your resume. ResumeSetu will never add them for you.
             </p>
           )}
 
@@ -201,24 +199,23 @@ export const ResumeHighlightPreview: React.FC<ResumeHighlightPreviewProps> = ({
               <p className="text-xs text-[#334E68] leading-relaxed">{selected.reason}</p>
               {selected.jdRequirement && (
                 <p className="text-xs text-[#334E68] leading-relaxed">
-                  <strong className="font-bold text-[#0B2545]">Answers:</strong> “{selected.jdRequirement}” —{' '}
+                  <strong className="font-bold text-[#0B2545]">Connects to:</strong> “{selected.jdRequirement}” —{' '}
                   required by the posting and evidenced by your own resume.
                 </p>
               )}
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[#1D4ED8] flex items-center gap-1.5">
                 <MousePointerClick className="w-3.5 h-3.5" aria-hidden />
-                Present in your uploaded file
+                Already in your resume
               </p>
             </>
           ) : (
             <div className="space-y-2">
               <p className="text-xs font-bold text-[#0B2545] flex items-center gap-1.5">
                 <Info className="w-3.5 h-3.5 text-[#1D4ED8]" aria-hidden />
-                Select a marked phrase
+                Choose a highlighted phrase
               </p>
               <p className="text-xs text-[#334E68] leading-relaxed">
-                Click or focus any highlight to see why it matters for this posting. The mark is only
-                a pointer — the sentence itself never changes.
+                Choose a highlight to see how it connects to the role. Your resume text stays the same.
               </p>
             </div>
           )}
@@ -226,7 +223,7 @@ export const ResumeHighlightPreview: React.FC<ResumeHighlightPreviewProps> = ({
           {categoriesPresent.length > 0 && (
             <div className="pt-1 border-t border-blue-pale/70 space-y-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#627D98]">
-                Legend — click to hide a category
+                Highlights — choose what to show
               </span>
               <ul className="space-y-1">
                 {legend

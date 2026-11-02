@@ -19,18 +19,6 @@ export const HeroScanMockup: React.FC<{ onScanClick?: () => void }> = ({ onScanC
       {/* Paper-like preview: clear and useful without pretending to be live telemetry. */}
       <div
         className="hero-preview__card glass-panel w-full relative rounded-3xl !bg-white border border-[#DFE5E0] shadow-[0_30px_60px_-28px_rgba(23,59,54,0.42)] overflow-hidden transition-all duration-300 hover:shadow-[0_34px_70px_-28px_rgba(23,59,54,0.5)]"
-        onPointerMove={(event) => {
-          if (event.pointerType !== 'mouse' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-          const bounds = event.currentTarget.getBoundingClientRect();
-          const x = (event.clientX - bounds.left) / bounds.width - 0.5;
-          const y = (event.clientY - bounds.top) / bounds.height - 0.5;
-          event.currentTarget.style.setProperty('--tilt-x', `${x * 2.4}deg`);
-          event.currentTarget.style.setProperty('--tilt-y', `${y * -2.4}deg`);
-        }}
-        onPointerLeave={(event) => {
-          event.currentTarget.style.setProperty('--tilt-x', '0deg');
-          event.currentTarget.style.setProperty('--tilt-y', '0deg');
-        }}
       >
 
         {/* Top Window Bar: Clean, authentic SaaS window */}
@@ -68,7 +56,7 @@ export const HeroScanMockup: React.FC<{ onScanClick?: () => void }> = ({ onScanC
                       <FileText className="w-3.5 h-3.5 text-[#24584F]" />
                     </div>
                     <span className="text-xs font-bold text-[#0B2545]">
-                      Candidate Experience
+                      Your experience
                     </span>
                   </div>
                   <span className="text-[10px] font-mono text-[#627D98]">6 Yrs Exp</span>
@@ -76,20 +64,20 @@ export const HeroScanMockup: React.FC<{ onScanClick?: () => void }> = ({ onScanC
 
                 <div className="space-y-1">
                   <div className="text-[11px] font-bold text-[#0B2545]">
-                    Staff Software Engineer
+                    Marketing Coordinator
                   </div>
                   <div className="text-[10px] text-[#334E68] bg-[#F7F9FC]/90 p-2.5 rounded-xl border border-[#8DA9C4]/25 leading-relaxed font-mono shadow-[inset_0_1px_2px_rgba(11,37,69,0.04)]">
-                    Architected idempotent payment microservices in TypeScript, reducing p99 latency by 38% under 99.99% availability SLAs.
+                    Planned weekly promotions and kept the sales team up to date on campaign progress.
                   </div>
                 </div>
 
                 {/* Extracted tokens */}
                 <div>
                   <span className="text-[10px] font-bold text-[#627D98] block mb-1">
-                    Details found in the resume:
+                    Skills in your resume:
                   </span>
                   <div className="flex flex-wrap gap-1">
-                    {['TypeScript', 'Microservices', 'p99 Latency', 'Idempotency'].map((kw) => (
+                    {['Project planning', 'Campaigns', 'Teamwork', 'Communication'].map((kw) => (
                       <span
                         key={kw}
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#1D4ED8]/10 text-[#1D4ED8] border border-[#1D4ED8]/25 shadow-2xs"
@@ -103,9 +91,9 @@ export const HeroScanMockup: React.FC<{ onScanClick?: () => void }> = ({ onScanC
               </div>
 
               <div className="pt-2.5 mt-3 border-t border-surface flex items-center justify-between text-[10px] text-[#627D98]">
-                <span>Format: Single Column</span>
+                <span>Simple, clear layout</span>
                 <span className="text-blue-core font-bold flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-blue-mid inline" /> Text extraction
+                  <ShieldCheck className="w-3.5 h-3.5 text-blue-mid inline" /> Easy to read
                 </span>
               </div>
             </div>
@@ -119,19 +107,19 @@ export const HeroScanMockup: React.FC<{ onScanClick?: () => void }> = ({ onScanC
                       <Target className="w-3.5 h-3.5 text-[#8E5B2D]" />
                     </div>
                     <span className="text-xs font-bold text-[#0B2545] truncate">
-                      Target Job Description
+                      Job posting
                     </span>
                   </div>
                   <span className="text-[10px] font-mono text-blue-core bg-blue-wash px-3 py-1 rounded-full border border-blue-pale font-bold whitespace-nowrap shrink-0">
-                    Stripe • Tech Lead
+                    Oak & Co. • Project Coordinator
                   </span>
                 </div>
 
                 {/* Skill Matching Checklist */}
                 <div className="space-y-2">
                   {[
-                    { text: 'Distributed Microservices', match: 'found' },
-                    { text: 'TypeScript & Node.js', match: 'found' },
+                    { text: 'Project planning', match: 'In your resume' },
+                    { text: 'Clear communication', match: 'In your resume' },
                   ].map((item) => (
                     <div
                       key={item.text}
@@ -148,25 +136,24 @@ export const HeroScanMockup: React.FC<{ onScanClick?: () => void }> = ({ onScanC
                   <div className="flex items-center justify-between text-[11px] p-2 rounded-xl bg-warning-soft/90 border border-warning-border shadow-2xs">
                     <span className="text-warning-strong font-semibold flex items-center gap-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 text-warning" />
-                      AWS ECS Canaries
+                      Budget tracking
                     </span>
-                    <span className="font-mono font-bold text-warning">Gap — not added</span>
+                    <span className="font-mono font-bold text-warning">Not in resume yet</span>
                   </div>
                 </div>
               </div>
 
               <div className="pt-2 border-t border-surface flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[10px] text-[#627D98]">
                 <span className="w-full sm:w-auto">
-                  Fictional candidate. Keyword gaps are shown as gaps — ResumeSetu never adds a
-                  keyword you have not evidenced.
+                  Example only. ResumeSetu never adds a skill or experience you don’t have.
                 </span>
                   <span>Next step:</span>
-                  <span className="font-mono font-bold text-[#0B2545]">Review the gaps</span>
+                  <span className="font-mono font-bold text-[#0B2545]">See what fits</span>
               </div>
             </div>
           </div>
 
-          {/* BOTTOM TELEMETRY BAR with Generous Un-cramped Layout */}
+            {/* Example resume match summary */}
           <div className="relative p-4 sm:p-5 rounded-2xl bg-[#173B36] text-white shadow-[0_22px_50px_-24px_rgba(23,59,54,0.7)] overflow-hidden space-y-3.5">
 
             {/* Top Info Row */}
@@ -178,7 +165,7 @@ export const HeroScanMockup: React.FC<{ onScanClick?: () => void }> = ({ onScanC
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs sm:text-sm font-bold text-white tracking-tight">
-                      Role fit review
+                      Resume match
                     </span>
                     <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[#D5E2D9] border border-white/20 font-semibold shrink-0">
                       Example only

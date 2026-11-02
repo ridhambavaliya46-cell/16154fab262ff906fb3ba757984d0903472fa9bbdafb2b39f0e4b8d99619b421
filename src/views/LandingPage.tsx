@@ -9,9 +9,9 @@ import {
   Check,
   ArrowRight,
   ShieldCheck,
-  FileText,
 } from 'lucide-react';
 import { HeroScanMockup } from '../components/HeroScanMockup.js';
+import { GreekLightning, GreekLaurel, GreekTemple } from '../components/GreekOrnaments.js';
 import { ThreeStepPipeline } from '../components/ThreeStepPipeline.js';
 import { CapabilitiesBento } from '../components/CapabilitiesBento.js';
 import { AtsPipelineDiagram } from '../components/AtsPipelineDiagram.js';
@@ -134,59 +134,52 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   return (
     <div ref={landingRef} className="landing-page relative w-full max-w-full min-h-screen bg-[#F7F7F3] text-[#173B36] selection:bg-[#173B36] selection:text-white overflow-x-hidden">
       {/* =========================================================================
-          1. HERO SECTION: BOLD CLEAN HEADLINE + BLUE & LIGHT-BLUE GRADIENTS + 3D
+          1. HERO SECTION: editorial introduction and document preview
          ========================================================================= */}
-      <section id="hero" className="relative isolate w-full overflow-hidden border-b border-[#DFE5E0] bg-[#F7F7F3] pt-24 sm:pt-28 lg:pt-32 pb-16 sm:pb-24">
-        <div aria-hidden="true" className="hero-ambient pointer-events-none absolute inset-0 -z-10 opacity-80" />
-        <div className="relative z-10 mx-auto grid w-full max-w-7xl min-w-0 grid-cols-1 items-center gap-12 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10 lg:px-8">
-          <div className="min-w-0 lg:py-8">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#C9D8CF] bg-[#FCFCF9] px-3.5 py-2 text-xs font-semibold text-[#315B50] shadow-[0_4px_16px_rgba(23,59,54,.05)]">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E4EEE7] text-[#24584F]"><FileText size={13} /></span>
+      <section id="hero" className="hero-stage relative isolate w-full overflow-hidden border-b">
+        <GreekTemple />
+        <div className="hero-copy relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center px-5 text-center sm:px-8" data-reveal>
+            <GreekLaurel />
+            <div className="hero-intro mb-5 text-xs font-semibold tracking-[0.04em] text-[#7B7B7B]">
               A calmer way to prepare your next application
             </div>
 
-            <h1 className="max-w-2xl text-[2.6rem] font-bold leading-[1.08] tracking-[-0.045em] text-[#102A49] sm:text-5xl lg:text-[3.65rem]">
+            <h1 className="max-w-4xl text-[2.6rem] font-semibold leading-[1.04] tracking-[-0.04em] text-[#111111] sm:text-6xl lg:text-[4.25rem]">
               Make the right parts of your experience easier to see.
             </h1>
-            <p className="mt-6 max-w-xl text-base leading-7 text-[#4C625B] sm:text-lg sm:leading-8">
+            <p className="mt-5 max-w-[42rem] text-base leading-7 text-[#7B7B7B] sm:text-lg sm:leading-8">
               Compare your resume with a job description, understand where you already fit, and decide what is worth improving before you apply.
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <button
-                type="button"
-                onClick={onScanClick}
-                className="hero-cta group inline-flex min-h-13 items-center justify-center gap-3 rounded-xl bg-[#1E5148] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_28px_-12px_rgba(30,81,72,.42)] transition hover:-translate-y-0.5 hover:bg-[#163F38] hover:shadow-[0_16px_32px_-12px_rgba(30,81,72,.48)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#BBD3C4]"
-              >
-                Analyze your resume free
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </button>
-              <a href="#how-it-works" className="inline-flex min-h-13 items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold text-[#315B50] transition hover:bg-white/70 hover:text-[#173B36]">
+            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
+              <div className="hero-cta-wrap">
+                <button type="button" onClick={onScanClick} className="hero-cta group inline-flex min-h-12 items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white focus-visible:outline-none">
+                  <GreekLightning />
+                  See how your resume fits
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </button>
+              </div>
+              <a href="#how-it-works" className="hero-secondary inline-flex min-h-12 items-center justify-center px-5 py-3 text-sm font-medium text-[#3A3A3A] transition-colors">
                 See how it works
               </a>
             </div>
 
-            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#D8E1DA] pt-5 text-xs font-medium text-[#62756D]">
-              <span className="inline-flex items-center gap-2"><Check className="h-4 w-4 text-[#2E765B]" /> {freeScanLimit} free scans each month</span>
-              <span className="hidden h-1 w-1 rounded-full bg-[#A4B5AA] sm:block" />
-              <span className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#2E765B]" /> Your documents stay yours</span>
+            <div className="hero-trust mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 pt-4 text-xs font-medium text-[#7B7B7B]">
+              <span className="inline-flex items-center gap-2"><Check className="h-4 w-4" /> {freeScanLimit} free resume reviews each month</span>
+              <span className="hidden h-1 w-1 rounded-full bg-[#BDBDBD] sm:block" />
+              <span className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> Your documents stay yours</span>
             </div>
-          </div>
+        </div>
+      </section>
 
-          <div className="relative min-w-0 lg:pl-3">
-            <div aria-hidden="true" className="absolute -inset-5 -z-10 rounded-[2.5rem] bg-gradient-to-br from-white/70 via-blue-100/50 to-indigo-100/30 blur-2xl" />
-            <HeroScanMockup onScanClick={onScanClick} />
-            <div className="absolute -bottom-4 left-4 hidden rounded-xl border border-white/80 bg-white/90 px-4 py-3 shadow-[0_12px_28px_rgba(11,37,69,.12)] backdrop-blur sm:block lg:-left-5">
-              <div className="flex items-center gap-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EAF3FF] text-[#1D4ED8]"><HugeiconsIcon icon={Target02Icon} size={17} /></span>
-                <span><span className="block text-xs font-semibold text-[#102A49]">Clear, useful feedback</span><span className="mt-0.5 block text-[10px] text-[#627D98]">Based on your resume and target role</span></span>
-              </div>
-            </div>
-          </div>
-
-          {/* The previous "Candidates Interviewed & Hired At" logo strip and the
-              named-case-study section were removed: they asserted employer
-              endorsements and candidate outcomes that were never verified. */}
+      <section className="hero-proof border-b px-4 py-14 sm:px-6 sm:py-20" aria-label="Resume and job description comparison example">
+        <div className="mx-auto w-full max-w-6xl" data-reveal>
+          <HeroScanMockup onScanClick={onScanClick} />
+          <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-[#7B7B7B]">
+            <span className="font-semibold text-[#111111]">Clear, useful feedback</span>
+            <span aria-hidden="true" className="text-[#9A9A9A]">·</span>
+            <span>Based on your resume and target role</span>
+          </p>
         </div>
       </section>
 
@@ -201,7 +194,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <CapabilitiesBento onScanClick={onScanClick} />
 
       {/* =========================================================================
-          4. ATS PIPELINE DIAGRAM: Interactive Architecture
+          4. HOW IT WORKS: Interactive overview
          ========================================================================= */}
       <AtsPipelineDiagram />
 
@@ -220,30 +213,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="text-center max-w-2xl mx-auto mb-16">
             <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-core mb-2">
               <HugeiconsIcon icon={Target02Icon} size={16} className="text-blue-core" />
-              <span>What Every Scan Reports</span>
+              <span>Clear feedback, based on your documents</span>
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#0B2545] tracking-tight">
-              Facts From Your Own Documents
+              Helpful feedback, without the guesswork
             </h2>
             <p className="mt-3 text-base sm:text-lg text-[#334E68] leading-relaxed">
-              We do not publish candidate success stories we cannot verify. Instead, here is exactly
-              what every scan hands back to you.
+              See how your resume compares with a role, what already comes through, and what you may want to review.
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {[
               {
-                title: '0–100 Match Score',
-                body: 'A keyword-coverage score computed between your resume text and the job description you pasted. Same inputs, same score, every time.',
+                title: 'A clear resume match',
+                body: 'A consistent guide to how your resume compares with the job posting you provide. It is not a hiring prediction.',
               },
               {
-                title: 'Keyword Gap List',
-                body: 'The specific terms the job asks for that your resume does not contain, listed verbatim so you can decide which ones you actually have experience with.',
+                title: 'What the role asks for',
+                body: 'See which skills and experience already appear in your resume and which ones may be worth reviewing.',
               },
               {
-                title: 'STAR Guidance',
-                body: 'A prompt per missing keyword telling you which bullet to write. It never writes your achievements for you and never invents a metric.',
+                title: 'Suggestions you control',
+                body: 'Get ideas for explaining your real experience more clearly. Review every suggestion and keep only what is true for you.',
               },
             ].map((item) => (
               <div
@@ -292,7 +284,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 },
                 {
                   art: <KeywordMapIllustration />,
-                  title: 'Find skill gaps',
+                  title: 'See what to review',
                   body: 'Review relevant job skills and decide what reflects your experience.',
                 },
               ].map((item) => (
@@ -348,25 +340,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </div>
 
                 <p className="text-xs sm:text-sm text-[#334E68] leading-relaxed">
-                  Evaluate resume compatibility on {freeScanLimit} targeted job descriptions every single month.
+                  Review your resume against up to {freeScanLimit} job postings each month.
                 </p>
 
                 <div className="pt-5 border-t border-surface/80 space-y-3.5 text-xs sm:text-sm text-[#0B2545]">
                   <div className="flex items-center gap-2.5">
                     <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} className="text-blue-mid shrink-0" />
-                    <span>{freeScanLimit} job match analyses each month</span>
+                    <span>{freeScanLimit} resume reviews each month</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} className="text-blue-mid shrink-0" />
-                    <span>0–100 ATS compatibility rating</span>
+                    <span>A clear guide to your resume match</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} className="text-blue-mid shrink-0" />
-                    <span>Missing keyword diagnostic report</span>
+                    <span>See what the job asks for</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} className="text-blue-mid shrink-0" />
-                    <span>Single-column ATS format preview</span>
+                    <span>An easy-to-read resume layout</span>
                   </div>
                   <div className="flex items-center gap-2.5 text-[#627D98]">
                     <HugeiconsIcon icon={CheckmarkCircle02Icon} size={18} className="text-blue-mid shrink-0" />
@@ -380,7 +372,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 onClick={onScanClick}
                 className="w-full py-4 px-5 rounded-xl border border-line-steel/40 bg-gradient-to-b from-white/90 to-[#EEF4FB]/90 hover:from-[#EEF4FB] hover:to-[#E2ECF6] text-[#0B2545] font-bold text-xs uppercase tracking-wider transition-all shadow-[0_4px_12px_rgba(11,37,69,0.06),inset_0_1px_0_rgba(255,255,255,1)] hover:shadow-md cursor-pointer"
               >
-                Start Free ({freeScanLimit} Scans / Month)
+                Start free · {freeScanLimit} reviews each month
               </button>
             </div>
 
@@ -413,13 +405,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <span className="w-5 h-5 rounded-full bg-[#1D4ED8] flex items-center justify-center shrink-0 shadow-xs">
                       <Check className="w-3 h-3 text-white" />
                     </span>
-                    <span>Unlimited ATS resume scans & job matches</span>
+                    <span>Unlimited resume reviews</span>
                   </div>
                   <div className="flex items-center gap-2.5 font-medium">
                     <span className="w-5 h-5 rounded-full bg-[#1D4ED8] flex items-center justify-center shrink-0 shadow-xs">
                       <Check className="w-3 h-3 text-white" />
                     </span>
-                    <span>See role requirements that may be missing from your resume</span>
+                    <span>See what the role asks for</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <span className="w-5 h-5 rounded-full bg-[#1D4ED8] flex items-center justify-center shrink-0 shadow-xs">
@@ -437,13 +429,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <span className="w-5 h-5 rounded-full bg-[#1D4ED8] flex items-center justify-center shrink-0 shadow-xs">
                       <Check className="w-3 h-3 text-white" />
                     </span>
-                    <span>Interactive Application Tracker & pipeline metrics</span>
+                    <span>Keep your applications organized</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <span className="w-5 h-5 rounded-full bg-[#1D4ED8] flex items-center justify-center shrink-0 shadow-xs">
                       <Check className="w-3 h-3 text-white" />
                     </span>
-                    <span>Single-column editable Word (.docx) export</span>
+                    <span>Editable Word resume draft</span>
                   </div>
                   <div className="flex items-center gap-2.5 text-[#8DA9C4]">
                     <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center shrink-0">
@@ -542,7 +534,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </span>
               </div>
               <p className="text-xs text-[#B8C9DA]/75 mt-3 max-w-sm leading-relaxed">
-                Compare your resume with a job description, find relevant gaps, and shape your next application with confidence.
+                Compare your resume with a job posting, decide what to improve, and prepare your next application with care.
               </p>
             </div>
 

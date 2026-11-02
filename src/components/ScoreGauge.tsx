@@ -20,18 +20,18 @@ export const ScoreGauge: React.FC<ScoreGaugeProps> = ({
   const offset = circumference - (normalizedScore / 100) * circumference;
 
   let strokeColor = '#8DA9C4';
-  let badgeText = 'Low coverage';
+  let badgeText = 'Some overlap';
   let badgeClass = 'text-[#334E68] bg-[#F0F4F8] border-[#CBD5E1]';
   let Icon = Target;
 
   if (normalizedScore >= 75) {
     strokeColor = '#1D4ED8';
-    badgeText = 'Strong keyword coverage';
+    badgeText = 'A strong match';
     badgeClass = 'text-[#1D4ED8] bg-blue-wash border-blue-pale';
     Icon = CheckCircle2;
   } else if (normalizedScore >= 50) {
     strokeColor = '#2563EB';
-    badgeText = 'Moderate coverage';
+    badgeText = 'A promising match';
     badgeClass = 'text-[#0B2545] bg-[#EFF5FC] border-[#93C5FD]/60';
     Icon = TrendingUp;
   }
@@ -89,7 +89,7 @@ export const ScoreGauge: React.FC<ScoreGaugeProps> = ({
           <span className="font-['Space_Grotesk'] text-2xl sm:text-3xl font-extrabold tracking-tight text-[#0B2545]">
             {displayScore}%
           </span>
-          <span className="text-[10px] text-[#627D98] font-bold uppercase tracking-wider">blended</span>
+          <span className="text-[10px] text-[#627D98] font-bold uppercase tracking-wider">resume match</span>
         </div>
       </div>
 

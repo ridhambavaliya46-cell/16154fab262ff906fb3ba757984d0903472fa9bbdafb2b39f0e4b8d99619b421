@@ -10,7 +10,6 @@ import { AdminPanel } from './views/AdminPanel.js';
 import { PaywallModal } from './components/PaywallModal.js';
 import { AuthModal } from './components/AuthModal.js';
 import { DeleteDataModal } from './components/DeleteDataModal.js';
-import { ATSInteractiveBackground } from './components/ATSInteractiveBackground.js';
 import { Logo } from './components/Logo.js';
 
 type Tab = 'landing' | 'dashboard' | 'admin';
@@ -23,9 +22,9 @@ function MainApp() {
   const [isDeleteDataOpen, setDeleteDataOpen] = useState(false);
   const [landingTheme, setLandingTheme] = useState<LandingTheme>(() => {
     try {
-      return localStorage.getItem('resumesetu-landing-theme') === 'light' ? 'light' : 'dark';
+      return localStorage.getItem('resumesetu-landing-theme-v2') === 'dark' ? 'dark' : 'light';
     } catch {
-      return 'dark';
+      return 'light';
     }
   });
   const initialRouteHandled = useRef(false);
@@ -38,12 +37,12 @@ function MainApp() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('resumesetu-landing-theme', landingTheme);
+      localStorage.setItem('resumesetu-landing-theme-v2', landingTheme);
     } catch {
       // Theme selection still works for this session if storage is unavailable.
     }
     const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-    if (themeColor) themeColor.content = landingTheme === 'dark' ? '#090B14' : '#F7F9FC';
+    if (themeColor) themeColor.content = landingTheme === 'dark' ? '#132431' : '#F4F0E6';
   }, [landingTheme]);
 
   // Sync hash and path routing if user clicks direct links or browser back/forward
@@ -136,11 +135,9 @@ function MainApp() {
 
   return (
     <div
-      className={`app-shell min-h-screen flex flex-col font-['IBM_Plex_Sans'] antialiased relative overflow-x-hidden max-w-full w-full ${currentTab === 'landing' ? 'landing-shell' : 'bg-[#F7F7F3] text-[#173B36] selection:bg-[#173B36] selection:text-white'}`}
+      className={`app-shell min-h-screen flex flex-col font-['IBM_Plex_Sans'] antialiased relative overflow-x-hidden max-w-full w-full ${currentTab === 'landing' ? 'landing-shell' : 'workspace-shell bg-[#F7F7F3] text-[#173B36] selection:bg-[#173B36] selection:text-white'}`}
       data-theme={currentTab === 'landing' ? landingTheme : undefined}
     >
-      {currentTab !== 'landing' && <ATSInteractiveBackground />}
-
       {/* Structured Navigation Header */}
       <Navbar
         currentTab={currentTab}
@@ -214,21 +211,21 @@ function MainApp() {
 const MissingClerkKeyPreview: React.FC = () => {
   const [theme, setTheme] = useState<LandingTheme>(() => {
     try {
-      return localStorage.getItem('resumesetu-landing-theme') === 'light' ? 'light' : 'dark';
+      return localStorage.getItem('resumesetu-landing-theme-v2') === 'dark' ? 'dark' : 'light';
     } catch {
-      return 'dark';
+      return 'light';
     }
   });
   const [notice, setNotice] = useState('');
 
   useEffect(() => {
     try {
-      localStorage.setItem('resumesetu-landing-theme', theme);
+      localStorage.setItem('resumesetu-landing-theme-v2', theme);
     } catch {
       // The preview theme remains usable for the current session.
     }
     const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-    if (themeColor) themeColor.content = theme === 'dark' ? '#090B14' : '#F4F5FB';
+    if (themeColor) themeColor.content = theme === 'dark' ? '#132431' : '#F4F0E6';
   }, [theme]);
 
   const unavailable = (feature: string) => {
@@ -255,7 +252,7 @@ const MissingClerkKeyPreview: React.FC = () => {
                 onClick={() => window.dispatchEvent(new Event('resumesetu:open-command'))}
               >
                 <Search className="h-4 w-4" aria-hidden="true" />
-                <span className="hidden sm:inline">Quick jump</span>
+                <span className="hidden sm:inline">Search</span>
                 <kbd>⌘K</kbd>
               </button>
               <button

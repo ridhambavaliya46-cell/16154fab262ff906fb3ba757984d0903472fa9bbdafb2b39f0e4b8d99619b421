@@ -119,21 +119,21 @@ export function runDocumentChecks(
     wordCount >= 25
       ? {
           id: 'text_extraction',
-          label: 'Text extraction',
+          label: 'Readable text',
           status: 'pass',
           measured: true,
           estimated: false,
           detail: `A selectable text layer was found: ${wordCount.toLocaleString('en-US')} words, ${body.length.toLocaleString(
             'en-US'
-          )} characters extracted.`,
+          )} characters found in the document.`,
         }
       : {
           id: 'text_extraction',
-          label: 'Text extraction',
+          label: 'Readable text',
           status: 'fail',
           measured: true,
           estimated: false,
-          detail: `Only ${wordCount} readable word(s) were extracted. Scanned or image-only resumes are unreadable to keyword screeners — upload a text-based PDF or DOCX.`,
+          detail: `We could read only ${wordCount} word(s). If this is a scanned image, try a text-based PDF or Word file instead.`,
         }
   );
 
@@ -141,7 +141,7 @@ export function runDocumentChecks(
   if (options.generated) {
     checks.push({
       id: 'single_column_layout',
-      label: 'Single-column layout',
+          label: 'Easy-to-read layout',
       status: 'pass',
       measured: true,
       estimated: false,
@@ -153,27 +153,27 @@ export function runDocumentChecks(
       risk.risky
         ? {
             id: 'single_column_layout',
-            label: 'Single-column layout',
+      label: 'Easy-to-read layout',
             status: 'warn',
             measured: true,
             estimated: true,
-            detail: `Column count cannot be read from extracted text, but this file shows layout markers often produced by multi-column or table designs: ${risk.signals.join(
+            detail: `This file may use columns or tables (${risk.signals.join(
               '; '
-            )}. Re-save it as a single-column document if a parser rejects it.`,
+            )}). A simple one-column layout can make your experience easier to follow.`,
           }
         : {
             id: 'single_column_layout',
-            label: 'Single-column layout',
+          label: 'Easy-to-read layout',
             status: 'not_tested',
             measured: false,
             estimated: false,
             detail:
-              'Not tested. Column count cannot be verified from extracted text alone — it requires reading the document layout, which ResumeSetu does not do. This check passes automatically on the single-column Word export ResumeSetu generates.',
+              'We can’t confirm the layout of an uploaded file from its text alone. Word drafts from ResumeSetu use a clear one-column layout.',
           }
     );
   }
 
-  // 3. Heading structure — a real measurement against standard ATS section names.
+  // 3. Heading structure — check for familiar resume section names.
   const lines = body
     .split('\n')
     .map((line) => line.trim())
@@ -189,16 +189,16 @@ export function runDocumentChecks(
     foundHeadings.length === 0
       ? {
           id: 'heading_structure',
-          label: 'Section headings',
+          label: 'Resume sections',
           status: 'fail',
           measured: true,
           estimated: false,
           detail:
-            'None of the standard ATS section headings (Summary, Experience, Skills, Education…) appear on their own line. Parsers use these headings to segment a resume, so this materially hurts keyword matching.',
+            'We couldn’t find familiar headings like Summary, Experience, Skills, or Education. Adding clear section headings can make your resume easier to read.',
         }
       : {
           id: 'heading_structure',
-          label: 'Section headings',
+          label: 'Resume sections',
           status: missingHeadings.length === 0 ? 'pass' : 'warn',
           measured: true,
           estimated: false,
@@ -234,19 +234,19 @@ export function runDocumentChecks(
           status: missingContact.length === 3 ? 'fail' : 'warn',
           measured: true,
           estimated: false,
-          detail: `Not found in the document text: ${missingContact.join(', ')}. Recruiters and most ATS platforms expect at least an email address and phone number.`,
+          detail: `Not found in the document text: ${missingContact.join(', ')}. Employers need an email address and phone number to contact you.`,
         }
   );
 
   // 5. Third-party ATS parser pass — explicitly unmeasured, by design.
   checks.push({
     id: 'ats_parser_pass',
-    label: 'ATS parser result',
+          label: 'Hiring system compatibility',
     status: 'not_tested',
     measured: false,
     estimated: false,
     detail:
-      'Not tested. ResumeSetu never submits your document to Greenhouse, Workday, Taleo or Lever, so there is no third-party parse or rejection result to report.',
+      'Not checked. We don’t send your resume to employers or their hiring systems.',
   });
 
   return {

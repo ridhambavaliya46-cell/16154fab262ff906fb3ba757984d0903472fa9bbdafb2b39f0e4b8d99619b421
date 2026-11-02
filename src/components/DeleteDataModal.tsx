@@ -91,7 +91,7 @@ export const DeleteDataModal: React.FC<DeleteDataModalProps> = ({
                 </div>
 
                 <p className="text-xs sm:text-sm text-[#334E68] leading-relaxed">
-                  This action immediately purges your uploaded resume files, match scores, keyword gap audits, and tailored outputs from our servers.
+                  This removes your uploaded resumes, role comparisons, skills lists, and drafts from your account.
                 </p>
 
                 <div>

@@ -67,41 +67,41 @@ export function buildScoreExplanation(input: ScoreExplanationInput): ScoreExplan
   const rows: ScoreComponentRow[] = [
     {
       id: 'coverage',
-      label: 'Keyword coverage',
+      label: 'Role requirements found',
       value: scoreBreakdown.keywordCoverage,
       definition: `${matchedCount} of the ${requiredCount} terms this posting is actually asking for appear in your resume${
         requiredCount > 0 ? '' : ', so there is nothing to count yet'
       }. Common filler words in job ads are excluded from both sides of that fraction.`,
       movesIt:
-        'Only by adding a term you can genuinely evidence from your own work. A keyword listed without proof behind it is what screening filters and interviewers catch first.',
+        'Only include a role requirement if it reflects your real experience. Add context that shows how you used that skill.',
     },
     {
       id: 'semantic',
-      label: 'Semantic proximity',
+      label: 'Similar wording',
       value: scoreBreakdown.semanticProximity,
       definition:
-        'Vocabulary overlap between your resume and the posting, measured as calibrated cosine similarity over both documents’ term frequencies.',
+        'A look at how closely the language in your resume reflects the language in the job posting.',
       movesIt:
-        'By describing your real experience in the posting’s own vocabulary — the same achievements phrased the way this employer phrases them.',
+        'Describe your real experience in clear language that connects to the role.',
     },
     {
       id: 'overall',
-      label: 'Overall ATS score',
+      label: 'Resume match',
       value: scoreBreakdown.overall,
-      definition: `A weighted blend: ${COVERAGE_WEIGHT}% keyword coverage plus ${SEMANTIC_WEIGHT}% semantic proximity, rounded to a whole number.`,
-      movesIt: 'It follows from the two rows above; there is no separate lever to pull.',
+      definition: `Combines role requirements found (${COVERAGE_WEIGHT}%) with similar wording (${SEMANTIC_WEIGHT}%). It is a guide to your documents, not a hiring prediction.`,
+      movesIt: 'It follows from the two comparisons above.',
     },
   ];
 
   const advice: string[] = [];
   if (scorable && missingCount > 0) {
     advice.push(
-      `${missingCount} required term${missingCount === 1 ? ' is' : 's are'} missing. Add the ones you truly have as bullets with context and a result — never as a bare keyword, and never for experience you do not have.`
+      `${missingCount} role requirement${missingCount === 1 ? ' is' : 's are'} not in your resume yet. Add only the ones that reflect your real experience, with enough detail to explain how you used them.`
     );
   }
   if (scorable) {
     advice.push(
-      'Re-run this scan after each edit: coverage changes immediately, proximity changes as your phrasing converges with the posting.'
+      'Review the comparison again after you edit your resume to see what changed.'
     );
   }
 
@@ -111,8 +111,8 @@ export function buildScoreExplanation(input: ScoreExplanationInput): ScoreExplan
     formula: `overall = ${COVERAGE_WEIGHT}% × keyword coverage + ${SEMANTIC_WEIGHT}% × semantic proximity`,
     rows,
     notMeasured: [
-      'Formatting and layout (this is text analysis, not a visual ATS renderer).',
-      'Grammar, spelling and tone.',
+      'Whether an employer will choose to interview you.',
+      'Grammar, spelling, or writing style.',
       'Seniority, years of experience or employment gaps.',
       'Whether a human will like your resume — no algorithm predicts that.',
     ],

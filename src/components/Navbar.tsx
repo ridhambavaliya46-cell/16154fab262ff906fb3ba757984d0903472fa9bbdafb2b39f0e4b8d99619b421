@@ -177,7 +177,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     : 'bg-blue-wash text-blue-core border-[#93C5FD]/60'
                 }`}
               >
-                {currentTab === 'admin' ? 'Admin Portal' : 'Workspace'}
+                {currentTab === 'admin' ? 'Admin Portal' : 'Your account'}
               </span>
             </div>
           )}
@@ -195,7 +195,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="hidden md:inline-flex items-center gap-1 text-xs font-semibold text-[#334E68] hover:text-[#0B2545] transition-colors cursor-pointer py-1.5 px-3 rounded-full hover:bg-surface/80 border border-line/60 whitespace-nowrap"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Overview</span>
+              <span>Home</span>
             </button>
 
             {/* Single-line, Inline Flex Pill with Fixed Height & Responsive Label */}
@@ -211,7 +211,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   : 'bg-blue-wash text-[#0B2545] border-[#93C5FD]/60'
               }`}
               title={isPro ? 'Pro Active' : 'Click to upgrade'}
-              aria-label={isPro ? 'Pro plan active, unlimited scans' : `Free tier, ${creditsRemaining} of ${scanLimit} scans remaining. Upgrade to Pro.`}
+              aria-label={isPro ? 'Pro plan active, unlimited resume reviews' : `Free plan, ${creditsRemaining} of ${scanLimit} resume reviews remaining. Upgrade to Pro.`}
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full shrink-0 ${
@@ -221,13 +221,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="whitespace-nowrap">
                 {isPro ? (
                   <>
-                    <span className="hidden sm:inline">Pro • Unlimited Scans</span>
+                    <span className="hidden sm:inline">Pro • Unlimited reviews</span>
                     <span className="sm:hidden">Pro</span>
                   </>
                 ) : (
                   <>
-                    <span className="hidden min-[400px]:inline">Free Tier • </span>
-                    <span>{creditsRemaining}/{scanLimit} Scans</span>
+                    <span className="hidden min-[400px]:inline">Free plan • </span>
+                    <span>{creditsRemaining}/{scanLimit} reviews</span>
                   </>
                 )}
               </span>
@@ -303,7 +303,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                             isPro ? 'bg-success animate-pulse' : 'bg-blue-core'
                           }`}
                         />
-                        {isPro ? 'Pro Member' : `Free Tier (${creditsRemaining}/${FREE_SCAN_LIMIT} Scans)`}
+                        {isPro ? 'Pro member' : `Free plan · ${creditsRemaining}/${FREE_SCAN_LIMIT} reviews`}
                       </span>
                     </div>
 
@@ -350,7 +350,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       className="w-full text-left px-4 py-2 text-xs font-semibold text-[#334E68] hover:bg-[#F0F4F8] flex items-center gap-2 cursor-pointer transition-colors"
                     >
                       <FileText className="w-3.5 h-3.5 text-[#627D98]" />
-                      <span>Back to Landing Overview</span>
+                      <span>Home</span>
                     </button>
 
                     <button
@@ -425,7 +425,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 aria-label="Open quick navigation, Control or Command K"
               >
                 <Search className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>Quick jump</span>
+                <span>Search</span>
                 <kbd>⌘K</kbd>
               </button>
               <button
@@ -455,14 +455,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                     aria-label={
                       isPro
                         ? 'Pro plan active'
-                        : `Free tier, ${creditsRemaining} of ${scanLimit} scans remaining. Upgrade to Pro.`
+                        : `Free plan, ${creditsRemaining} of ${scanLimit} resume reviews remaining. Upgrade to Pro.`
                     }
                   >
                     <span
                       className={`w-1.5 h-1.5 rounded-full ${isPro ? 'bg-blue-bright' : 'bg-[#1D4ED8]'}`}
                     />
                     <span className="whitespace-nowrap">
-                      {isPro ? 'Pro Active' : `Free Tier • ${creditsRemaining}/${FREE_SCAN_LIMIT} Scans`}
+                      {isPro ? 'Pro active' : `Free plan · ${creditsRemaining}/${FREE_SCAN_LIMIT} reviews`}
                     </span>
                   </button>
 
@@ -473,7 +473,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     }}
                     className="px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider text-white bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] hover:from-[#1E40AF] hover:to-[#2563EB] transition-all flex items-center gap-1.5 shadow-[0_4px_16px_rgba(29,78,216,0.35)] cursor-pointer whitespace-nowrap"
                   >
-                    <span>Open Workspace</span>
+                    <span>Open resume tools</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
 
@@ -572,7 +572,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={handleAnalyzeResume}
                 className="px-3.5 py-1.5 rounded-full font-bold text-xs text-white bg-gradient-to-r from-[#1D4ED8] to-[#2563EB] shadow-[0_4px_12px_rgba(29,78,216,0.4)] whitespace-nowrap"
               >
-                {isSignedIn ? 'Workspace' : 'Analyze'}
+                {isSignedIn ? 'Resume tools' : 'Check my resume'}
               </button>
               <button
                 type="button"
@@ -621,7 +621,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }}
             className="text-left py-2 px-3 rounded-lg hover:bg-surface transition-colors"
           >
-            Quick jump · Ctrl/⌘K
+            Search sections
           </button>
           <div className="pt-2 flex flex-col gap-2">
             {!isSignedIn && (
@@ -640,7 +640,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={handleAnalyzeResume}
               className="w-full py-3 rounded-xl font-bold text-xs uppercase tracking-wider text-white bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(29,78,216,0.4)] cursor-pointer"
             >
-              <span>{isSignedIn ? 'Open Workspace' : 'Analyze Resume'}</span>
+              <span>{isSignedIn ? 'Open resume tools' : 'Check my resume'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

@@ -22,18 +22,18 @@ interface CapabilitiesBentoProps {
 export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClick }) => {
   // Card 1: Gap Finder interactive state
   const [activeKeywords, setActiveKeywords] = useState<string[]>([
-    'TypeScript',
-    'PostgreSQL',
-    'Distributed Caching',
+    'Project planning',
+    'Team leadership',
+    'Product launches',
   ]);
 
   const testKeywords = [
-    { name: 'TypeScript', weight: 15 },
-    { name: 'PostgreSQL', weight: 14 },
-    { name: 'Distributed Caching', weight: 16 },
-    { name: 'Kubernetes', weight: 18 },
-    { name: 'CI/CD Pipelines', weight: 12 },
-    { name: 'System Design', weight: 15 },
+    { name: 'Project planning', weight: 15 },
+    { name: 'Team leadership', weight: 14 },
+    { name: 'Product launches', weight: 16 },
+    { name: 'Customer research', weight: 18 },
+    { name: 'Budget ownership', weight: 12 },
+    { name: 'Data analysis', weight: 15 },
   ];
 
   const currentScore = Math.min(
@@ -56,15 +56,15 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
   const [bulletMode, setBulletMode] = useState<'raw' | 'tailored'>('tailored');
 
   // Card 3: Cover Letter tone state
-  const [letterTone, setLetterTone] = useState<'direct' | 'technical' | 'growth'>('direct');
+  const [letterTone, setLetterTone] = useState<'direct' | 'warm' | 'growth'>('direct');
 
   const toneSnippets = {
     direct:
-      'Eliminating p99 latency bottlenecks across distributed payment pipelines.',
-    technical:
-      'Engineered idempotent microservices on Kubernetes with Redis caching.',
+      'I’m interested in this role because my experience in customer research and project delivery fits what your team is looking for.',
+    warm:
+      'I’m excited to bring my background in product planning and teamwork to a company whose work I admire.',
     growth:
-      'Scaled monthly settled volume past $14.2M while reducing infra costs 38%.',
+      'In my current role, I’ve helped bring new ideas from planning through launch and learned to work well across teams.',
   };
 
   // Card 4: Application Tracker active filter
@@ -72,26 +72,26 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
 
   const trackedApplications = [
     {
-      company: 'Stripe',
-      role: 'Staff Infrastructure Engineer',
-      matchScore: 96,
-      status: 'Tech Screen',
+      company: 'Northstar Studio',
+      role: 'Project coordinator',
+      matchScore: 78,
+      status: 'Interview',
       statusClass: 'bg-blue-wash text-blue-core border-blue-pale',
       isOffer: false,
     },
     {
-      company: 'Linear',
-      role: 'Growth Engineer',
-      matchScore: 94,
-      status: 'Final Round',
+      company: 'Field & Form',
+      role: 'Product associate',
+      matchScore: 72,
+      status: 'Interview',
       statusClass: 'bg-blue-wash text-blue-core border-blue-pale',
       isOffer: false,
     },
     {
-      company: 'Notion',
-      role: 'Senior Backend',
-      matchScore: 91,
-      status: 'Offer ($185k)',
+      company: 'Cedar Works',
+      role: 'Operations lead',
+      matchScore: 86,
+      status: 'Offer',
       statusClass: 'bg-blue-wash text-blue-deep border-blue-pale font-bold',
       isOffer: true,
     },
@@ -109,8 +109,8 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
         {/* Section Header */}
         <div className="max-w-2xl mb-12 sm:mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 backdrop-blur-xl border border-white/80 shadow-xs mb-3">
-            <HugeiconsIcon icon={FilterIcon} size={14} className="text-[#1D4ED8]" />
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#1D4ED8]">
+            <HugeiconsIcon icon={FilterIcon} size={14} className="text-[#8B7045]" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#8B7045]">
               Practical tools
             </span>
           </div>
@@ -137,19 +137,19 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
             <div>
               <div className="flex items-center justify-between pb-4 mb-4 border-b border-surface/80">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#1D4ED8] to-[#0B2545] p-0.5 shadow-[0_6px_16px_rgba(29,78,216,0.35)] flex items-center justify-center shrink-0">
-                    <div className="w-full h-full rounded-[14px] bg-[#0B2545] flex items-center justify-center relative overflow-hidden">
-                      <HugeiconsIcon icon={FilterIcon} size={20} className="text-[#93C5FD] relative z-10" />
+                  <div className="w-11 h-11 rounded-2xl bg-[#111111] p-0.5 shadow-[0_6px_16px_rgba(17,17,17,0.16)] flex items-center justify-center shrink-0">
+                    <div className="w-full h-full rounded-[14px] bg-[#111111] flex items-center justify-center relative overflow-hidden">
+                      <HugeiconsIcon icon={FilterIcon} size={20} className="text-white relative z-10" />
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-[#0B2545]">Gap Finder</h3>
-                    <p className="text-[11px] text-[#627D98]">Relevant gaps</p>
+                    <h3 className="text-xl font-bold text-[#0B2545]">What the role asks for</h3>
+                    <p className="text-[11px] text-[#627D98]">Skills and experience to review</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 font-mono px-3 py-1.5 rounded-xl bg-white/80 border border-[#8DA9C4]/30 shadow-xs">
-                  <span className="text-[11px] text-[#627D98]">Match:</span>
+                  <span className="text-[11px] text-[#627D98]">Example match:</span>
                   <span
                     className={`text-xl font-black tabular-nums ${
                       currentScore >= 80 ? 'text-blue-core' : 'text-[#1D4ED8]'
@@ -180,7 +180,6 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
                         <AlertTriangle className="w-3 h-3 text-warning" />
                       )}
                       <span>{k.name}</span>
-                      <span className="font-mono text-[9px] opacity-80">+{k.weight}%</span>
                     </button>
                   );
                 })}
@@ -195,10 +194,10 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
                 <div className="flex items-center justify-between text-[11px] font-medium">
                   <span className="text-[#0B2545] flex items-center gap-1.5 font-bold">
                     <HugeiconsIcon icon={Shield01Icon} size={14} className="text-blue-mid" />
-                    Illustrative keyword coverage
+                    How the resume lines up
                   </span>
                   <span className="font-mono font-bold text-blue-core">
-                    Demo only — not an ATS prediction
+                    Example only — not a hiring prediction
                   </span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-line overflow-hidden">
@@ -215,12 +214,12 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
             </div>
 
             <div className="pt-4 mt-5 border-t border-surface/80 flex items-center justify-between text-xs text-[#627D98]">
-                  <span>Demo only — your score uses your own documents</span>
+                  <span>Example only · your real review uses your documents</span>
               <button
                 onClick={onScanClick}
                 className="font-bold text-[#1D4ED8] hover:text-blue-core flex items-center gap-1 cursor-pointer"
               >
-                <span>Run Gap Audit</span>
+                <span>See how your resume fits</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -235,14 +234,14 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
             <div>
               <div className="flex items-center justify-between pb-4 mb-4 border-b border-surface/80">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#1D4ED8] to-[#0B2545] p-0.5 shadow-[0_6px_16px_rgba(29,78,216,0.35)] flex items-center justify-center shrink-0">
-                    <div className="w-full h-full rounded-[14px] bg-[#0B2545] flex items-center justify-center relative overflow-hidden">
-                      <HugeiconsIcon icon={FileValidationIcon} size={20} className="text-[#93C5FD] relative z-10" />
+                  <div className="w-11 h-11 rounded-2xl bg-[#111111] p-0.5 shadow-[0_6px_16px_rgba(17,17,17,0.16)] flex items-center justify-center shrink-0">
+                    <div className="w-full h-full rounded-[14px] bg-[#111111] flex items-center justify-center relative overflow-hidden">
+                      <HugeiconsIcon icon={FileValidationIcon} size={20} className="text-white relative z-10" />
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-[#0B2545]">Tailored Resume</h3>
-                    <p className="text-[11px] text-[#627D98]">STAR bullet rewriter</p>
+                    <h3 className="text-xl font-bold text-[#0B2545]">A clearer resume draft</h3>
+                    <p className="text-[11px] text-[#627D98]">You review every change</p>
                   </div>
                 </div>
 
@@ -256,7 +255,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
                         : 'text-[#627D98]'
                     }`}
                   >
-                    Raw
+                    Original
                   </button>
                   <button
                     onClick={() => setBulletMode('tailored')}
@@ -266,7 +265,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
                         : 'text-[#627D98]'
                     }`}
                   >
-                    STAR
+                    Clearer
                   </button>
                 </div>
               </div>
@@ -274,20 +273,20 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
               {/* Bullet Comparison Display */}
               <div className="p-3.5 rounded-2xl bg-white/70 border border-[#8DA9C4]/30 space-y-2 mb-3 shadow-inner">
                 <div className="text-[10px] font-mono text-[#627D98] flex items-center justify-between">
-                  <span>{bulletMode === 'raw' ? 'Uncalibrated' : 'Google STAR Formula'}</span>
+                  <span>{bulletMode === 'raw' ? 'Original wording' : 'A clearer version'}</span>
                   <span
                     className={`font-bold ${
                       bulletMode === 'raw' ? 'text-warning' : 'text-blue-core'
                     }`}
                   >
-                    {bulletMode === 'raw' ? 'Vague Metric' : '+38% Latency Gain'}
+                    {bulletMode === 'raw' ? 'Before' : 'After'}
                   </span>
                 </div>
 
                 <p className="text-[11px] sm:text-xs text-[#0B2545] leading-relaxed font-mono">
                   {bulletMode === 'raw'
-                    ? 'Built internal payment microservices in Node and fixed slow queries for the backend team.'
-                    : 'Architected idempotent payment microservices in TypeScript, reducing p99 latency by 38% under 99.99% SLAs.'}
+                    ? 'Helped plan weekly promotions and shared campaign updates with the sales team.'
+                    : 'Coordinated weekly promotions with the sales team and kept everyone updated on campaign progress.'}
                 </p>
               </div>
 
@@ -305,9 +304,9 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
             </div>
 
             <div className="pt-4 mt-5 border-t border-surface/80 flex items-center justify-between text-xs text-[#627D98]">
-              <span>Single-column format</span>
-              <span className="font-bold text-blue-core flex items-center gap-1">
-                <Download className="w-3.5 h-3.5" /> Word .docx Ready
+                  <span>Easy-to-read layout</span>
+                  <span className="font-bold text-blue-core flex items-center gap-1">
+                    <Download className="w-3.5 h-3.5" /> Editable Word draft
               </span>
             </div>
           </div>
@@ -321,14 +320,14 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
             <div>
               <div className="flex items-center justify-between pb-4 mb-4 border-b border-surface/80">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#1D4ED8] to-[#0B2545] p-0.5 shadow-[0_6px_16px_rgba(29,78,216,0.35)] flex items-center justify-center shrink-0">
-                    <div className="w-full h-full rounded-[14px] bg-[#0B2545] flex items-center justify-center relative overflow-hidden">
-                      <HugeiconsIcon icon={Mail01Icon} size={20} className="text-[#93C5FD] relative z-10" />
+                  <div className="w-11 h-11 rounded-2xl bg-[#111111] p-0.5 shadow-[0_6px_16px_rgba(17,17,17,0.16)] flex items-center justify-center shrink-0">
+                    <div className="w-full h-full rounded-[14px] bg-[#111111] flex items-center justify-center relative overflow-hidden">
+                      <HugeiconsIcon icon={Mail01Icon} size={20} className="text-white relative z-10" />
                     </div>
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-[#0B2545]">Cover Letter</h3>
-                    <p className="text-[11px] text-[#627D98]">Targeted executive pitch</p>
+                    <p className="text-[11px] text-[#627D98]">A first draft, in your voice</p>
                   </div>
                 </div>
 
@@ -339,7 +338,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
 
               {/* Tone Selection Tabs */}
               <div className="flex items-center gap-1.5 mb-3">
-                {(['direct', 'technical', 'growth'] as const).map((tone) => (
+                {(['direct', 'warm', 'growth'] as const).map((tone) => (
                   <button
                     key={tone}
                     onClick={() => setLetterTone(tone)}
@@ -371,8 +370,8 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
             </div>
 
             <div className="pt-4 mt-5 border-t border-surface/80 flex items-center justify-between text-xs text-[#627D98]">
-              <span>Zero boilerplate fluff</span>
-              <span className="font-bold text-[#1D4ED8]">Export Ready</span>
+              <span>Make it yours</span>
+              <span className="font-bold text-[#1D4ED8]">Ready to review</span>
             </div>
           </div>
 
@@ -385,9 +384,9 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
             <div>
               <div className="flex items-center justify-between pb-4 mb-4 border-b border-surface/80">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#1D4ED8] to-[#0B2545] p-0.5 shadow-[0_6px_16px_rgba(29,78,216,0.35)] flex items-center justify-center shrink-0">
-                    <div className="w-full h-full rounded-[14px] bg-[#0B2545] flex items-center justify-center relative overflow-hidden">
-                      <HugeiconsIcon icon={Briefcase01Icon} size={20} className="text-[#93C5FD] relative z-10" />
+                  <div className="w-11 h-11 rounded-2xl bg-[#111111] p-0.5 shadow-[0_6px_16px_rgba(17,17,17,0.16)] flex items-center justify-center shrink-0">
+                    <div className="w-full h-full rounded-[14px] bg-[#111111] flex items-center justify-center relative overflow-hidden">
+                      <HugeiconsIcon icon={Briefcase01Icon} size={20} className="text-white relative z-10" />
                     </div>
                   </div>
                   <div>

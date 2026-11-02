@@ -33,7 +33,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
   isOpen,
   onClose,
   title = 'Upgrade to ResumeSetu Pro',
-  subtitle = 'Get unlimited resume scans, editable Word drafts, and role-specific cover letters. Payment is reviewed manually before Pro is activated.',
+  subtitle = 'Get unlimited resume reviews, editable Word drafts, and cover letters for each role. Pro is activated manually after your upgrade request is reviewed.',
 }) => {
   const { user, setAuthModalOpen } = useAuth();
 
@@ -174,7 +174,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                       <span className="text-xs text-[#627D98] font-medium">/ month</span>
                     </div>
                     <span className="text-[11px] text-[#627D98] font-medium">
-                      Unlimited scans &amp; exports
+                      Unlimited resume reviews &amp; downloads
                     </span>
                   </div>
                   <span className="text-xs font-bold text-[#1D4ED8] bg-white border border-blue-pale/70 px-3 py-1 rounded-full shadow-2xs">
@@ -186,19 +186,19 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                 <div className="space-y-3 mb-6 text-xs sm:text-sm text-[#0B2545]">
                   <div className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-blue-mid shrink-0" />
-                    <span className="font-medium">Unlimited match-score evaluations</span>
+                    <span className="font-medium">Unlimited resume reviews</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-blue-mid shrink-0" />
-                    <span className="font-medium">Tailored resume rewritten from your own experience</span>
+                    <span className="font-medium">Resume drafts based on your experience</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-blue-mid shrink-0" />
-                    <span className="font-medium">Downloadable Microsoft Word (.docx) files</span>
+                    <span className="font-medium">Editable Word document downloads</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-blue-mid shrink-0" />
-                    <span className="font-medium">Custom cover letters aligned to each job description</span>
+                    <span className="font-medium">Cover letter drafts for each role</span>
                   </div>
                 </div>
 

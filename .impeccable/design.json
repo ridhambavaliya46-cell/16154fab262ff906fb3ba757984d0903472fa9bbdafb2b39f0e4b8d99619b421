@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-02T13:50:53Z",
+  "title": "Design System: ResumeSetu",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "primary",
+        "displayName": "Aegean Ink",
+        "tonalRamp": ["#102431", "#17364a", "#23495c", "#315f6b", "#47747b", "#8da99c", "#ded4c2", "#f4f0e6"]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Limestone",
+        "tonalRamp": ["#132431", "#192d3a", "#1c3340", "#536873", "#8b958f", "#c7b998", "#ded4c2", "#f4f0e6"]
+      },
+      "bronze": {
+        "role": "tertiary",
+        "displayName": "Aged Bronze",
+        "tonalRamp": ["#604725", "#76572f", "#8f6f42", "#a88a5c", "#c6a871", "#d7c197", "#e8dcc1", "#f5efe3"]
+      },
+      "olive": {
+        "role": "secondary",
+        "displayName": "Olive Grove",
+        "tonalRamp": ["#3f513f", "#526b52", "#647b66", "#7d927b", "#a7b99b", "#c2d0b8", "#e1e9d9", "#f1f3ec"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "DM Serif Display", "purpose": "Classical editorial headlines." },
+      "body": { "displayName": "Manrope", "purpose": "Body copy, controls, and navigation." }
+    },
+    "shadows": [
+      { "name": "preview-paper", "value": "0 30px 54px -42px rgba(17,17,17,0.22)", "purpose": "Quietly lift the sample document comparison from the paper canvas." },
+      { "name": "menu-soft", "value": "0 24px 70px rgba(11,13,22,0.24)", "purpose": "Separate the command menu from the page while open." }
+    ],
+    "motion": [
+      { "name": "classical-illustration", "value": "Static, responsive inline SVG with no animation loop", "purpose": "Keep the Parthenon line art clear and quiet behind the hero copy." },
+      { "name": "control-state", "value": "180ms ease", "purpose": "Quiet hover and focus feedback." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The main application action, confident but quiet.",
+      "html": "<button class=\"ds-primary\">Analyze your resume free</button>",
+      "css": ".ds-primary { min-height: 48px; padding: 0 24px; border: 1px solid #A88A5C; border-radius: 8px; background: #17364A; color: #FBF9F3; font: 500 14px Manrope, sans-serif; transition: background 180ms ease; } .ds-primary:hover { background: #24485C; } .ds-primary:focus-visible { outline: 2px solid #A88A5C; outline-offset: 3px; }"
+    },
+    {
+      "name": "Secondary Action",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A quiet route to product details and navigation.",
+      "html": "<button class=\"ds-secondary\">See how it works</button>",
+      "css": ".ds-secondary { min-height: 44px; padding: 0 18px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: #344957; font: 500 14px Manrope, sans-serif; } .ds-secondary:hover { color: #17364A; background: rgba(168,138,92,.08); } .ds-secondary:focus-visible { outline: 2px solid #A88A5C; outline-offset: 3px; }"
+    },
+    {
+      "name": "Document Preview",
+      "kind": "card",
+      "refersTo": "preview-paper",
+      "description": "An honest sample of the resume-to-role comparison.",
+      "html": "<article class=\"ds-preview\"><strong>Example review</strong><p>Resume details compared with a target role.</p></article>",
+      "css": ".ds-preview { padding: 24px; border: 1px solid #DED4C2; border-radius: 12px; background: #FBF9F3; color: #1D2B36; box-shadow: 0 30px 54px -42px rgba(23,54,74,.2); font: 400 14px/1.7 Manrope, sans-serif; } .ds-preview strong { font: 400 24px/1.2 'DM Serif Display', Georgia, serif; } .ds-preview p { color: #536873; }"
+    },
+    {
+      "name": "Navigation Link",
+      "kind": "nav",
+      "refersTo": "navigation-active",
+      "description": "Quiet section navigation with a fine active underline.",
+      "html": "<a class=\"ds-nav\" href=\"#pricing\">Pricing</a>",
+      "css": ".ds-nav { color: #344957; text-decoration: none; font: 500 13px Manrope, sans-serif; } .ds-nav:hover, .ds-nav[aria-current='location'] { color: #17364A; } .ds-nav[aria-current='location'] { text-decoration: underline; text-decoration-color: #A88A5C; text-underline-offset: 8px; } .ds-nav:focus-visible { outline: 2px solid #A88A5C; outline-offset: 3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Aegean Ledger",
+    "overview": "A Greek classic editorial system across landing, workspace, admin, and dialogs: limestone paper, Aegean navy, olive, aged bronze, DM Serif Display, and Manrope. A Parthenon line illustration, laurel crown, and small lightning mark define the hero.",
+    "keyCharacteristics": ["Limestone and Aegean ink", "Bronze and olive details", "Parthenon, laurel crown, and meander rule"],
+    "rules": [
+      { "name": "The Aegean Palette Rule", "body": "Use navy for action, bronze for fine emphasis, and olive for positive states; keep contrast readable on limestone.", "section": "colors" },
+      { "name": "The Classical Voice Rule", "body": "Use DM Serif Display for headlines and Manrope for body text and controls.", "section": "typography" },
+      { "name": "The Classical Architecture Rule", "body": "Use the Parthenon line illustration as the hero focal point and keep Greek motifs restrained.", "section": "imagery" }
+    ],
+    "dos": ["Do give the document comparison room to breathe.", "Do use short sections and warm whitespace."],
+    "donts": ["Don't use unrelated brand copy or fictional partner logos.", "Don't add remote raster assets without verified rights."]
+  }
+}

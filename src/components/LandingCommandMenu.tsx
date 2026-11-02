@@ -13,11 +13,11 @@ const commands: Command[] = [
   { label: 'Overview', detail: 'Back to the first section', target: '#hero' },
   { label: 'How it works', detail: 'See the three-step process', target: '#how-it-works' },
   { label: 'Features', detail: 'Explore the workspace tools', target: '#capabilities' },
-  { label: 'Word export', detail: 'Preview the single-column document', target: '#export-preview' },
-  { label: 'What you get', detail: 'Review score, gaps, and guidance', target: '#proof' },
+  { label: 'Your resume draft', detail: 'See the kind of document you can prepare', target: '#export-preview' },
+  { label: 'What you get', detail: 'See how the resume review helps', target: '#proof' },
   { label: 'Pricing', detail: 'Compare Free and Pro', target: '#pricing' },
   { label: 'Frequently asked questions', detail: 'Find an answer', target: '#faq' },
-  { label: 'Analyze a resume', detail: 'Open the resume analysis flow', action: 'scan' },
+  { label: 'Check my resume', detail: 'See how your resume fits a role', action: 'scan' },
 ];
 
 export const LandingCommandMenu: React.FC<{ onScanClick: () => void }> = ({ onScanClick }) => {

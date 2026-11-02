@@ -28,7 +28,7 @@ export const ScoreExplainer: React.FC<ScoreExplainerProps> = ({ defaultOpen = fa
       >
         <span className="text-xs font-bold uppercase tracking-wider text-[#0B2545] flex items-center gap-1.5">
           <Info className="w-3.5 h-3.5 text-[#1D4ED8]" aria-hidden />
-          How this score was calculated
+          What this number means
         </span>
         <ChevronDown
           className={`w-4 h-4 text-[#627D98] transition-transform ${open ? 'rotate-180' : ''}`}
@@ -38,8 +38,8 @@ export const ScoreExplainer: React.FC<ScoreExplainerProps> = ({ defaultOpen = fa
 
       {open && (
         <div id="score-explainer-body" className="px-4 pb-4 space-y-3 border-t border-line/70 pt-3">
-          <p className="text-[11px] font-mono font-semibold text-[#334E68] bg-white border border-line/80 rounded-xl px-3 py-2">
-            {explanation.formula}
+          <p className="text-xs text-[#334E68] bg-white border border-line/80 rounded-xl px-3 py-2 leading-relaxed">
+            Your score compares the experience in your resume with the requirements in this job posting.
           </p>
 
           {!explanation.scorable && explanation.unscoreableReason && (
