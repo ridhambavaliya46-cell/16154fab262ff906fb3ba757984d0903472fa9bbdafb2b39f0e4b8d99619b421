@@ -15,9 +15,23 @@ export const HeroScanMockup: React.FC<{ onScanClick?: () => void }> = ({ onScanC
   const displayScore = 86;
 
   return (
-    <div className="relative w-full pt-3">
+    <div className="hero-preview relative w-full pt-3">
       {/* Paper-like preview: clear and useful without pretending to be live telemetry. */}
-      <div className="glass-panel w-full relative rounded-3xl !bg-white border border-[#DFE5E0] shadow-[0_30px_60px_-28px_rgba(23,59,54,0.42)] overflow-hidden transition-all duration-300 hover:shadow-[0_34px_70px_-28px_rgba(23,59,54,0.5)] hover:-translate-y-1">
+      <div
+        className="hero-preview__card glass-panel w-full relative rounded-3xl !bg-white border border-[#DFE5E0] shadow-[0_30px_60px_-28px_rgba(23,59,54,0.42)] overflow-hidden transition-all duration-300 hover:shadow-[0_34px_70px_-28px_rgba(23,59,54,0.5)]"
+        onPointerMove={(event) => {
+          if (event.pointerType !== 'mouse' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+          const bounds = event.currentTarget.getBoundingClientRect();
+          const x = (event.clientX - bounds.left) / bounds.width - 0.5;
+          const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+          event.currentTarget.style.setProperty('--tilt-x', `${x * 2.4}deg`);
+          event.currentTarget.style.setProperty('--tilt-y', `${y * -2.4}deg`);
+        }}
+        onPointerLeave={(event) => {
+          event.currentTarget.style.setProperty('--tilt-x', '0deg');
+          event.currentTarget.style.setProperty('--tilt-y', '0deg');
+        }}
+      >
 
         {/* Top Window Bar: Clean, authentic SaaS window */}
         <div className="bg-[#FCFCF9] px-4 py-3 border-b border-[#E6EBE6] flex items-center justify-between">

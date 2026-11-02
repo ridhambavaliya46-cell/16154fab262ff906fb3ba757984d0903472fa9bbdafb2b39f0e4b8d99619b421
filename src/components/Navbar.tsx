@@ -11,6 +11,9 @@ import {
   FileText,
   ShieldCheck,
   CreditCard,
+  Sun,
+  Moon,
+  Search,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.js';
 import { useLenisScroll } from '../context/LenisContext.js';
@@ -22,6 +25,8 @@ interface NavbarProps {
   onOpenPaywall: () => void;
   onOpenDeleteData: () => void;
   isSignedIn?: boolean;
+  landingTheme: 'dark' | 'light';
+  onToggleLandingTheme: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -30,12 +35,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenPaywall,
   onOpenDeleteData,
   isSignedIn = false,
+  landingTheme,
+  onToggleLandingTheme,
 }) => {
   const { user, identity, logout, setAuthModalOpen } = useAuth();
   const { scrollTo } = useLenisScroll();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pendingAnchor, setPendingAnchor] = useState<string | null>(null);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [activeLandingSection, setActiveLandingSection] = useState('hero');
   // Separate refs per avatar: the workspace and landing headers each render their
   // own trigger, and sharing one ref coupled the click-outside handler to
   // whichever branch happened to mount.
@@ -65,6 +73,23 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (currentTab !== 'landing' || !('IntersectionObserver' in window)) return;
+    const sections = ['hero', 'how-it-works', 'capabilities', 'proof', 'pricing', 'faq']
+      .map((id) => document.getElementById(id))
+      .filter((section): section is HTMLElement => Boolean(section));
+    if (!sections.length) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible) setActiveLandingSection(visible.target.id);
+    }, { rootMargin: '-20% 0px -65% 0px', threshold: [0, 0.2, 0.5, 0.8] });
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, [currentTab]);
+
   // Scrolling to an anchor on a view that is not mounted yet needs to happen
   // after React commits the landing page. A fixed 100ms timeout raced the render
   // and silently dropped the scroll on slow frames.
@@ -88,6 +113,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const handleNavClick = (anchor: string) => {
     setMobileMenuOpen(false);
+    setActiveLandingSection(anchor.replace('#', ''));
     if (currentTab !== 'landing') {
       setCurrentTab('landing');
       setPendingAnchor(anchor);
@@ -370,25 +396,47 @@ export const Navbar: React.FC<NavbarProps> = ({
             <nav className="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-wider text-[#334E68]">
               <button
                 onClick={() => handleNavClick('#how-it-works')}
+                aria-current={activeLandingSection === 'how-it-works' ? 'location' : undefined}
                 className="hover:text-[#0B2545] transition-colors cursor-pointer py-1"
               >
                 How It Works
               </button>
               <button
                 onClick={() => handleNavClick('#capabilities')}
+                aria-current={activeLandingSection === 'capabilities' ? 'location' : undefined}
                 className="hover:text-[#0B2545] transition-colors cursor-pointer py-1"
               >
                 Features
               </button>
               <button
                 onClick={() => handleNavClick('#pricing')}
+                aria-current={activeLandingSection === 'pricing' ? 'location' : undefined}
                 className="hover:text-[#0B2545] transition-colors cursor-pointer py-1"
               >
                 Pricing
               </button>
             </nav>
 
-            <div className="hidden md:flex items-center gap-3 shrink-0">
+            <div className="hidden md:flex items-center gap-2.5 shrink-0">
+              <button
+                type="button"
+                className="command-trigger"
+                onClick={() => window.dispatchEvent(new Event('resumesetu:open-command'))}
+                aria-label="Open quick navigation, Control or Command K"
+              >
+                <Search className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>Quick jump</span>
+                <kbd>⌘K</kbd>
+              </button>
+              <button
+                type="button"
+                className="theme-toggle"
+                onClick={onToggleLandingTheme}
+                aria-label={`Switch to ${landingTheme === 'dark' ? 'light' : 'dark'} theme`}
+                title={`Switch to ${landingTheme === 'dark' ? 'light' : 'dark'} theme`}
+              >
+                {landingTheme === 'dark' ? <Sun className="h-4 w-4" aria-hidden="true" /> : <Moon className="h-4 w-4" aria-hidden="true" />}
+              </button>
               {isSignedIn ? (
                 <div className="flex items-center gap-3">
                   {/* Single-line fixed height pill on landing if signed in */}
@@ -512,6 +560,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Mobile menu hamburger toggle */}
             <div className="flex md:hidden items-center gap-2 shrink-0">
               <button
+                type="button"
+                className="theme-toggle"
+                onClick={onToggleLandingTheme}
+                aria-label={`Switch to ${landingTheme === 'dark' ? 'light' : 'dark'} theme`}
+                title={`Switch to ${landingTheme === 'dark' ? 'light' : 'dark'} theme`}
+              >
+                {landingTheme === 'dark' ? <Sun className="h-4 w-4" aria-hidden="true" /> : <Moon className="h-4 w-4" aria-hidden="true" />}
+              </button>
+              <button
                 onClick={handleAnalyzeResume}
                 className="px-3.5 py-1.5 rounded-full font-bold text-xs text-white bg-gradient-to-r from-[#1D4ED8] to-[#2563EB] shadow-[0_4px_12px_rgba(29,78,216,0.4)] whitespace-nowrap"
               >
@@ -555,6 +612,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="text-left py-2 px-3 rounded-lg hover:bg-surface transition-colors"
           >
             Pricing
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMobileMenuOpen(false);
+              window.dispatchEvent(new Event('resumesetu:open-command'));
+            }}
+            className="text-left py-2 px-3 rounded-lg hover:bg-surface transition-colors"
+          >
+            Quick jump · Ctrl/⌘K
           </button>
           <div className="pt-2 flex flex-col gap-2">
             {!isSignedIn && (

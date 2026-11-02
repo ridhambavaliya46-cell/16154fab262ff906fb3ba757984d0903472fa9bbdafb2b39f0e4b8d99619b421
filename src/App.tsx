@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ClerkProvider } from '@clerk/react';
+import { Moon, Search, Sun, X } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext.js';
 import { LenisProvider } from './context/LenisContext.js';
 import { Navbar } from './components/Navbar.js';
@@ -10,14 +11,23 @@ import { PaywallModal } from './components/PaywallModal.js';
 import { AuthModal } from './components/AuthModal.js';
 import { DeleteDataModal } from './components/DeleteDataModal.js';
 import { ATSInteractiveBackground } from './components/ATSInteractiveBackground.js';
+import { Logo } from './components/Logo.js';
 
 type Tab = 'landing' | 'dashboard' | 'admin';
+type LandingTheme = 'dark' | 'light';
 
 function MainApp() {
   const { user, loading, setAuthModalOpen, setAuthMode } = useAuth();
   const [currentTab, setCurrentTab] = useState<Tab>('landing');
   const [isPaywallOpen, setPaywallOpen] = useState(false);
   const [isDeleteDataOpen, setDeleteDataOpen] = useState(false);
+  const [landingTheme, setLandingTheme] = useState<LandingTheme>(() => {
+    try {
+      return localStorage.getItem('resumesetu-landing-theme') === 'light' ? 'light' : 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
   const initialRouteHandled = useRef(false);
 
   // The signed httpOnly backend session is authoritative. Profile metadata from
@@ -25,6 +35,16 @@ function MainApp() {
   // the workspace.
   const hasAccess = Boolean(user && !user.isAnonymous && !user.id.startsWith('guest_'));
   const routingReady = !loading;
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('resumesetu-landing-theme', landingTheme);
+    } catch {
+      // Theme selection still works for this session if storage is unavailable.
+    }
+    const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (themeColor) themeColor.content = landingTheme === 'dark' ? '#090B14' : '#F7F9FC';
+  }, [landingTheme]);
 
   // Sync hash and path routing if user clicks direct links or browser back/forward
   useEffect(() => {
@@ -115,9 +135,11 @@ function MainApp() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F3] text-[#173B36] flex flex-col font-['IBM_Plex_Sans'] antialiased selection:bg-[#173B36] selection:text-white relative overflow-x-hidden max-w-full w-full">
-      {/* Blueprint Grid Canvas Texture */}
-      <ATSInteractiveBackground />
+    <div
+      className={`app-shell min-h-screen flex flex-col font-['IBM_Plex_Sans'] antialiased relative overflow-x-hidden max-w-full w-full ${currentTab === 'landing' ? 'landing-shell' : 'bg-[#F7F7F3] text-[#173B36] selection:bg-[#173B36] selection:text-white'}`}
+      data-theme={currentTab === 'landing' ? landingTheme : undefined}
+    >
+      {currentTab !== 'landing' && <ATSInteractiveBackground />}
 
       {/* Structured Navigation Header */}
       <Navbar
@@ -126,6 +148,8 @@ function MainApp() {
         onOpenPaywall={() => setPaywallOpen(true)}
         onOpenDeleteData={() => setDeleteDataOpen(true)}
         isSignedIn={hasAccess}
+        landingTheme={landingTheme}
+        onToggleLandingTheme={() => setLandingTheme((theme) => theme === 'dark' ? 'light' : 'dark')}
       />
 
       {/* Main View Container */}
@@ -187,29 +211,95 @@ function MainApp() {
  * loudly and says exactly what to fix, instead of rendering a shell whose
  * buttons silently do nothing.
  */
-const MissingClerkKeyNotice: React.FC = () => (
-  <div className="grid min-h-screen place-items-center bg-[#F7F7F3] p-6 font-['IBM_Plex_Sans'] text-[#173B36]">
-    <div className="w-full max-w-md rounded-2xl border border-[#CBD5E1] bg-white p-6 shadow-xl">
-      <h1 className="font-['Space_Grotesk'] text-xl font-extrabold tracking-tight">
-        Sign-in is not configured
-      </h1>
-      <p className="mt-2 text-sm leading-relaxed text-[#334E68]">
-        ResumeSetu uses Clerk for authentication, and this deployment has no Clerk publishable
-        key. Set <code className="rounded bg-[#F2F6FC] px-1 py-0.5 text-xs">VITE_CLERK_PUBLISHABLE_KEY</code> in{' '}
-        <code className="rounded bg-[#F2F6FC] px-1 py-0.5 text-xs">.env</code> and rebuild.
-      </p>
-      <p className="mt-3 text-xs leading-relaxed text-[#627D98]">
-        The key is public and safe to expose to the browser. It is not the Clerk secret key.
-      </p>
-    </div>
-  </div>
-);
+const MissingClerkKeyPreview: React.FC = () => {
+  const [theme, setTheme] = useState<LandingTheme>(() => {
+    try {
+      return localStorage.getItem('resumesetu-landing-theme') === 'light' ? 'light' : 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
+  const [notice, setNotice] = useState('');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('resumesetu-landing-theme', theme);
+    } catch {
+      // The preview theme remains usable for the current session.
+    }
+    const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (themeColor) themeColor.content = theme === 'dark' ? '#090B14' : '#F4F5FB';
+  }, [theme]);
+
+  const unavailable = (feature: string) => {
+    setNotice(`${feature} needs sign-in. Add a valid Clerk publishable key to enable account features.`);
+  };
+
+  return (
+    <LenisProvider>
+      <div className="app-shell landing-shell relative flex min-h-screen w-full max-w-full flex-col overflow-x-hidden font-['IBM_Plex_Sans'] antialiased" data-theme={theme}>
+        <header className="sticky top-0 z-50 w-full border-b">
+          <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+            <Logo size="md" variant={theme === 'dark' ? 'dark' : 'default'} />
+            <nav aria-label="Main navigation" className="hidden items-center gap-6 text-sm font-medium md:flex">
+              <a href="#how-it-works">How it works</a>
+              <a href="#capabilities">Features</a>
+              <a href="#pricing">Pricing</a>
+              <a href="#faq">FAQs</a>
+            </nav>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="command-trigger"
+                aria-label="Open quick navigation (Ctrl or Command+K)"
+                onClick={() => window.dispatchEvent(new Event('resumesetu:open-command'))}
+              >
+                <Search className="h-4 w-4" aria-hidden="true" />
+                <span className="hidden sm:inline">Quick jump</span>
+                <kbd>⌘K</kbd>
+              </button>
+              <button
+                type="button"
+                className="theme-toggle"
+                onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}
+                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+              >
+                {theme === 'dark' ? <Sun className="h-4 w-4" aria-hidden="true" /> : <Moon className="h-4 w-4" aria-hidden="true" />}
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {notice && (
+          <div className="mx-auto mt-4 flex w-[min(72rem,calc(100%-2rem))] items-start justify-between gap-4 rounded-xl border border-[var(--landing-border)] bg-[var(--landing-panel-strong)] px-4 py-3 text-sm text-[var(--landing-ink)] shadow-lg" role="status">
+            <p>{notice}</p>
+            <button type="button" onClick={() => setNotice('')} aria-label="Dismiss message" className="shrink-0 rounded-md p-1 focus-visible:outline focus-visible:outline-2">
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        )}
+
+        <main className="flex-1">
+          <LandingPage
+            onScanClick={() => unavailable('Resume analysis')}
+            onOpenPaywall={() => unavailable('Pro activation')}
+            onOpenDeleteData={() => unavailable('Account data controls')}
+          />
+        </main>
+        <div className="border-t border-[var(--landing-border)] bg-[var(--landing-panel)] px-4 py-2 text-center text-xs text-[var(--landing-muted)]">
+          Preview mode · authentication and account actions need a valid Clerk publishable key.
+        </div>
+      </div>
+    </LenisProvider>
+  );
+};
 
 export function App() {
   const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  const hasValidPublishableKey = /^pk_(?:test|live)_[A-Za-z0-9_=-]+$/.test(publishableKey || '');
 
-  if (!publishableKey) {
-    return <MissingClerkKeyNotice />;
+  if (!hasValidPublishableKey) {
+    return <MissingClerkKeyPreview />;
   }
 
   /*

@@ -27,44 +27,65 @@ export const LenisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [lenis, setLenis] = useState<Lenis | null>(null);
 
   useEffect(() => {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) {
-      return;
-    }
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let instance: Lenis | null = null;
+    let rafId: number | null = null;
 
-    const instance = new Lenis({
-      // A lower interpolation keeps wheel movement gliding between inputs so
-      // the smooth-scroll effect is perceptible without making the page sluggish.
-      lerp: 0.075,
-      orientation: 'vertical',
-      gestureOrientation: 'vertical',
-      smoothWheel: true,
-      wheelMultiplier: 0.9,
-      touchMultiplier: 1.5,
-      anchors: true,
-      // Native touch scrolling: Lenis' synced touch animation was a common
-      // source of jank on mobile devices and buys nothing on desktop.
-      syncTouch: false,
-    });
-
-    lenisRef.current = instance;
-    setLenis(instance);
-    document.documentElement.classList.add('lenis', 'lenis-smooth');
-
-    let rafId: number;
-    const raf = (time: number) => {
-      instance.raf(time);
-      rafId = requestAnimationFrame(raf);
+    const stop = () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      instance?.destroy();
+      instance = null;
+      lenisRef.current = null;
+      document.documentElement.classList.remove('lenis', 'lenis-smooth');
+      setLenis(null);
     };
-    rafId = requestAnimationFrame(raf);
+
+    const start = () => {
+      if (motionPreference.matches || instance) return;
+      const active = new Lenis({
+        lerp: 0.075,
+        orientation: 'vertical',
+        gestureOrientation: 'vertical',
+        smoothWheel: true,
+        wheelMultiplier: 0.9,
+        touchMultiplier: 1.5,
+        anchors: true,
+        syncTouch: false,
+        autoRaf: false,
+      });
+      instance = active;
+      lenisRef.current = active;
+      setLenis(active);
+      document.documentElement.classList.add('lenis', 'lenis-smooth');
+
+      const tick = (time: number) => {
+        if (instance !== active) return;
+        active.raf(time);
+        rafId = requestAnimationFrame(tick);
+      };
+      rafId = requestAnimationFrame(tick);
+    };
+
+    const syncMotionPreference = () => {
+      if (motionPreference.matches) stop();
+      else start();
+    };
+
+    start();
+    motionPreference.addEventListener('change', syncMotionPreference);
 
     return () => {
-      cancelAnimationFrame(rafId);
-      instance.destroy();
+      motionPreference.removeEventListener('change', syncMotionPreference);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      instance?.destroy();
+      instance = null;
       lenisRef.current = null;
       document.documentElement.classList.remove('lenis', 'lenis-smooth');
     };
-  }, [setLenis]);
+  }, []);
 
   // Stable identity so consumers (Navbar) stop re-rendering on every provider render.
   const scrollTo = useCallback((target: string | number | HTMLElement, options?: ScrollOptions) => {

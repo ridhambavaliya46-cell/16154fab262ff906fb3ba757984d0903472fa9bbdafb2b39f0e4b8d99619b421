@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Target02Icon,
@@ -16,6 +16,7 @@ import { ThreeStepPipeline } from '../components/ThreeStepPipeline.js';
 import { CapabilitiesBento } from '../components/CapabilitiesBento.js';
 import { AtsPipelineDiagram } from '../components/AtsPipelineDiagram.js';
 import { WordExportMockup } from '../components/WordExportMockup.js';
+import { LandingCommandMenu } from '../components/LandingCommandMenu.js';
 import { Logo } from '../components/Logo.js';
 import { OwnerProfileCard, type OwnerProfileData } from '../components/OwnerProfile.js';
 import { FREE_SCAN_LIMIT, PRO_PRICE_INR } from '../config.js';
@@ -64,6 +65,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onOpenPaywall,
   onOpenDeleteData,
 }) => {
+  const landingRef = useRef<HTMLDivElement>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   // Owner identity for the footer contact card. Fetched from the server so the
   // handle and photo are deployment configuration, not hard-coded in the bundle.
@@ -74,6 +76,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   // Admin-configurable Pro price; the constant below is only the pre-load default.
   const [proPriceInr, setProPriceInr] = useState(PRO_PRICE_INR);
   const faqs = buildFaqs(proPriceInr);
+
+  useEffect(() => {
+    const root = landingRef.current;
+    if (!root || window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
+
+    const targets = Array.from(root.querySelectorAll<HTMLElement>('section:not(#hero), .landing-card'));
+    if (!targets.length) return;
+    root.classList.add('reveal-ready');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const element = entry.target as HTMLElement;
+        element.dataset.revealed = 'true';
+        observer.unobserve(element);
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -36px 0px' });
+
+    targets.forEach((element, index) => {
+      element.dataset.reveal = 'true';
+      element.style.setProperty('--reveal-delay', `${(index % 3) * 55}ms`);
+      observer.observe(element);
+    });
+
+    return () => {
+      observer.disconnect();
+      root.classList.remove('reveal-ready');
+      targets.forEach((element) => {
+        delete element.dataset.reveal;
+        delete element.dataset.revealed;
+        element.style.removeProperty('--reveal-delay');
+      });
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,12 +132,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   }, []);
 
   return (
-    <div className="landing-page relative w-full max-w-full min-h-screen bg-[#F7F7F3] text-[#173B36] selection:bg-[#173B36] selection:text-white overflow-x-hidden">
+    <div ref={landingRef} className="landing-page relative w-full max-w-full min-h-screen bg-[#F7F7F3] text-[#173B36] selection:bg-[#173B36] selection:text-white overflow-x-hidden">
       {/* =========================================================================
           1. HERO SECTION: BOLD CLEAN HEADLINE + BLUE & LIGHT-BLUE GRADIENTS + 3D
          ========================================================================= */}
       <section id="hero" className="relative isolate w-full overflow-hidden border-b border-[#DFE5E0] bg-[#F7F7F3] pt-24 sm:pt-28 lg:pt-32 pb-16 sm:pb-24">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-80" style={{ background: 'radial-gradient(ellipse at 80% 30%, rgba(214,226,214,.58), transparent 42%), radial-gradient(ellipse at 12% 15%, rgba(239,224,201,.38), transparent 36%)' }} />
+        <div aria-hidden="true" className="hero-ambient pointer-events-none absolute inset-0 -z-10 opacity-80" />
         <div className="relative z-10 mx-auto grid w-full max-w-7xl min-w-0 grid-cols-1 items-center gap-12 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10 lg:px-8">
           <div className="min-w-0 lg:py-8">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#C9D8CF] bg-[#FCFCF9] px-3.5 py-2 text-xs font-semibold text-[#315B50] shadow-[0_4px_16px_rgba(23,59,54,.05)]">
@@ -120,7 +156,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <button
                 type="button"
                 onClick={onScanClick}
-                className="group inline-flex min-h-13 items-center justify-center gap-3 rounded-xl bg-[#1E5148] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_28px_-12px_rgba(30,81,72,.42)] transition hover:-translate-y-0.5 hover:bg-[#163F38] hover:shadow-[0_16px_32px_-12px_rgba(30,81,72,.48)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#BBD3C4]"
+                className="hero-cta group inline-flex min-h-13 items-center justify-center gap-3 rounded-xl bg-[#1E5148] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_28px_-12px_rgba(30,81,72,.42)] transition hover:-translate-y-0.5 hover:bg-[#163F38] hover:shadow-[0_16px_32px_-12px_rgba(30,81,72,.48)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#BBD3C4]"
               >
                 Analyze your resume free
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -442,7 +478,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* =========================================================================
           7. FAQ ACCORDION
          ========================================================================= */}
-      <section className="py-20 sm:py-28 border-b border-line-steel/30">
+      <section id="faq" className="py-20 sm:py-28 border-b border-line-steel/30 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-xl mx-auto mb-14">
             <h2 className="text-2xl sm:text-3xl font-bold text-[#0B2545] tracking-tight">
@@ -555,6 +591,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </div>
       </footer>
+      <LandingCommandMenu onScanClick={onScanClick} />
     </div>
   );
 };
