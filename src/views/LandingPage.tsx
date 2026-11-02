@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Target02Icon,
@@ -9,6 +9,7 @@ import {
   Check,
   ArrowRight,
   ShieldCheck,
+  FileText,
 } from 'lucide-react';
 import { HeroScanMockup } from '../components/HeroScanMockup.js';
 import { ThreeStepPipeline } from '../components/ThreeStepPipeline.js';
@@ -28,7 +29,6 @@ interface LandingPageProps {
   onScanClick: () => void;
   onOpenPaywall: () => void;
   onOpenDeleteData: () => void;
-  isSignedIn: boolean;
 }
 
 const buildFaqs = (proPriceInr: number) => [
@@ -63,9 +63,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onScanClick,
   onOpenPaywall,
   onOpenDeleteData,
-  isSignedIn,
 }) => {
-  const landingRef = useRef<HTMLDivElement>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   // Owner identity for the footer contact card. Fetched from the server so the
   // handle and photo are deployment configuration, not hard-coded in the bundle.
@@ -97,58 +95,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     };
   }, []);
 
-  // Reveals are observer-driven (no scroll handler or second animation loop).
-  // Content remains visible by default and stays visible for reduced-motion users.
-  useEffect(() => {
-    const root = landingRef.current;
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (!root || reduceMotion.matches || !('IntersectionObserver' in window)) return;
-
-    const targets = Array.from(
-      root.querySelectorAll<HTMLElement>('section:not(#hero), .landing-card'),
-    );
-    if (!targets.length) return;
-
-    root.classList.add('reveal-ready');
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          const element = entry.target as HTMLElement;
-          element.dataset.revealed = 'true';
-          observer.unobserve(element);
-        });
-      },
-      { threshold: 0.08, rootMargin: '0px 0px -40px 0px' },
-    );
-
-    targets.forEach((element, index) => {
-      element.dataset.reveal = 'true';
-      element.style.setProperty('--reveal-delay', `${(index % 3) * 55}ms`);
-      observer.observe(element);
-    });
-
-    return () => {
-      observer.disconnect();
-      root.classList.remove('reveal-ready');
-      targets.forEach((element) => {
-        delete element.dataset.reveal;
-        delete element.dataset.revealed;
-        element.style.removeProperty('--reveal-delay');
-      });
-    };
-  }, []);
-
   return (
-    <div ref={landingRef} className="landing-page relative w-full max-w-full min-h-screen bg-[#F7F7F3] text-[#173B36] selection:bg-[#173B36] selection:text-white overflow-x-hidden">
+    <div className="landing-page relative w-full max-w-full min-h-screen bg-[#F7F7F3] text-[#173B36] selection:bg-[#173B36] selection:text-white overflow-x-hidden">
       {/* =========================================================================
           1. HERO SECTION: BOLD CLEAN HEADLINE + BLUE & LIGHT-BLUE GRADIENTS + 3D
          ========================================================================= */}
       <section id="hero" className="relative isolate w-full overflow-hidden border-b border-[#DFE5E0] bg-[#F7F7F3] pt-24 sm:pt-28 lg:pt-32 pb-16 sm:pb-24">
-        <div aria-hidden="true" className="hero-ambient pointer-events-none absolute inset-0 -z-10 opacity-80" style={{ background: 'radial-gradient(ellipse at 78% 26%, rgba(190,211,193,.48), transparent 42%), radial-gradient(ellipse at 12% 18%, rgba(239,224,201,.34), transparent 38%)' }} />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-80" style={{ background: 'radial-gradient(ellipse at 80% 30%, rgba(214,226,214,.58), transparent 42%), radial-gradient(ellipse at 12% 15%, rgba(239,224,201,.38), transparent 36%)' }} />
         <div className="relative z-10 mx-auto grid w-full max-w-7xl min-w-0 grid-cols-1 items-center gap-12 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10 lg:px-8">
           <div className="min-w-0 lg:py-8">
-            <h1 className="max-w-2xl text-[2.6rem] font-bold leading-[1.08] tracking-[-0.04em] text-[#102A49] sm:text-5xl lg:text-[4.1rem]">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#C9D8CF] bg-[#FCFCF9] px-3.5 py-2 text-xs font-semibold text-[#315B50] shadow-[0_4px_16px_rgba(23,59,54,.05)]">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E4EEE7] text-[#24584F]"><FileText size={13} /></span>
+              A calmer way to prepare your next application
+            </div>
+
+            <h1 className="max-w-2xl text-[2.6rem] font-bold leading-[1.08] tracking-[-0.045em] text-[#102A49] sm:text-5xl lg:text-[3.65rem]">
               Make the right parts of your experience easier to see.
             </h1>
             <p className="mt-6 max-w-xl text-base leading-7 text-[#4C625B] sm:text-lg sm:leading-8">
@@ -161,7 +122,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 onClick={onScanClick}
                 className="group inline-flex min-h-13 items-center justify-center gap-3 rounded-xl bg-[#1E5148] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_28px_-12px_rgba(30,81,72,.42)] transition hover:-translate-y-0.5 hover:bg-[#163F38] hover:shadow-[0_16px_32px_-12px_rgba(30,81,72,.48)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#BBD3C4]"
               >
-                {isSignedIn ? 'Open your workspace' : 'Start a free resume scan'}
+                Analyze your resume free
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </button>
               <a href="#how-it-works" className="inline-flex min-h-13 items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold text-[#315B50] transition hover:bg-white/70 hover:text-[#173B36]">
@@ -169,7 +130,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </a>
             </div>
 
-            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#D8E1DA] pt-5 text-sm font-medium text-[#52675F]">
+            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#D8E1DA] pt-5 text-xs font-medium text-[#62756D]">
               <span className="inline-flex items-center gap-2"><Check className="h-4 w-4 text-[#2E765B]" /> {freeScanLimit} free scans each month</span>
               <span className="hidden h-1 w-1 rounded-full bg-[#A4B5AA] sm:block" />
               <span className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#2E765B]" /> Your documents stay yours</span>
@@ -221,6 +182,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section id="proof" className="relative border-b border-line-steel/30 bg-white py-20 sm:py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-2xl mx-auto mb-16">
+            <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-core mb-2">
+              <HugeiconsIcon icon={Target02Icon} size={16} className="text-blue-core" />
+              <span>What Every Scan Reports</span>
+            </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#0B2545] tracking-tight">
               Facts From Your Own Documents
             </h2>
@@ -266,6 +231,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
             <div>
+              <span className="mb-3 inline-flex items-center rounded-full border border-blue-pale/60 bg-white/65 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-blue-core backdrop-blur">
+                Built for real job searches
+              </span>
               <h2 className="text-3xl font-extrabold tracking-tight text-[#0B2545] sm:text-4xl">
                 Make each application more intentional.
               </h2>
@@ -316,6 +284,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section id="pricing" className="py-20 sm:py-28 border-b border-line-steel/30 scroll-mt-16 relative">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-xl mx-auto mb-16">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#2E765B] block mb-2">
+              Simple, honest pricing
+            </span>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#173B36] tracking-tight">
               A clear price for your job search
             </h2>

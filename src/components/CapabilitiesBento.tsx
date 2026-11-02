@@ -24,18 +24,25 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
   const [activeKeywords, setActiveKeywords] = useState<string[]>([
     'TypeScript',
     'PostgreSQL',
-    'Distributed caching',
+    'Distributed Caching',
   ]);
 
   const testKeywords = [
-    { name: 'TypeScript' },
-    { name: 'PostgreSQL' },
-    { name: 'Distributed caching' },
-    { name: 'Kubernetes' },
-    { name: 'CI/CD pipelines' },
-    { name: 'System design' },
+    { name: 'TypeScript', weight: 15 },
+    { name: 'PostgreSQL', weight: 14 },
+    { name: 'Distributed Caching', weight: 16 },
+    { name: 'Kubernetes', weight: 18 },
+    { name: 'CI/CD Pipelines', weight: 12 },
+    { name: 'System Design', weight: 15 },
   ];
-  const selectedKeywordCount = testKeywords.filter((keyword) => activeKeywords.includes(keyword.name)).length;
+
+  const currentScore = Math.min(
+    98,
+    30 +
+      testKeywords
+        .filter((k) => activeKeywords.includes(k.name))
+        .reduce((acc, curr) => acc + curr.weight, 0)
+  );
 
   const toggleKeyword = (name: string) => {
     if (activeKeywords.includes(name)) {
@@ -53,11 +60,11 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
 
   const toneSnippets = {
     direct:
-      'I have worked on Node.js payment services and helped investigate database queries with a backend team.',
+      'Eliminating p99 latency bottlenecks across distributed payment pipelines.',
     technical:
-      'My experience includes Node.js services, payment workflows, and collaborative query troubleshooting.',
+      'Engineered idempotent microservices on Kubernetes with Redis caching.',
     growth:
-      'I am looking to bring my experience with payment services and practical problem-solving to a growing team.',
+      'Scaled monthly settled volume past $14.2M while reducing infra costs 38%.',
   };
 
   // Card 4: Application Tracker active filter
@@ -65,23 +72,26 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
 
   const trackedApplications = [
     {
-      company: 'Company A',
-      role: 'Backend engineer',
-      status: 'Interview',
+      company: 'Stripe',
+      role: 'Staff Infrastructure Engineer',
+      matchScore: 96,
+      status: 'Tech Screen',
       statusClass: 'bg-blue-wash text-blue-core border-blue-pale',
       isOffer: false,
     },
     {
-      company: 'Company B',
-      role: 'Platform engineer',
-      status: 'Applied',
+      company: 'Linear',
+      role: 'Growth Engineer',
+      matchScore: 94,
+      status: 'Final Round',
       statusClass: 'bg-blue-wash text-blue-core border-blue-pale',
       isOffer: false,
     },
     {
-      company: 'Company C',
-      role: 'Software engineer',
-      status: 'Offer',
+      company: 'Notion',
+      role: 'Senior Backend',
+      matchScore: 91,
+      status: 'Offer ($185k)',
       statusClass: 'bg-blue-wash text-blue-deep border-blue-pale font-bold',
       isOffer: true,
     },
@@ -89,7 +99,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
 
   const filteredApplications = trackedApplications.filter((app) => {
     if (trackerFilter === 'offers') return app.isOffer;
-    if (trackerFilter === 'interview') return app.status === 'Interview';
+    if (trackerFilter === 'interview') return !app.isOffer;
     return true;
   });
 
@@ -98,6 +108,13 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section Header */}
         <div className="max-w-2xl mb-12 sm:mb-16">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 backdrop-blur-xl border border-white/80 shadow-xs mb-3">
+            <HugeiconsIcon icon={FilterIcon} size={14} className="text-[#1D4ED8]" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#1D4ED8]">
+              Practical tools
+            </span>
+          </div>
+
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#0B2545] tracking-tight">
             A workspace for{' '}
             <span className="text-[#2E765B]">
@@ -132,8 +149,14 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
                 </div>
 
                 <div className="flex items-center gap-1.5 font-mono px-3 py-1.5 rounded-xl bg-white/80 border border-[#8DA9C4]/30 shadow-xs">
-                  <span className="text-[11px] text-[#627D98]">Example</span>
-                  <span className="text-sm font-bold tabular-nums text-[#28664F]">{selectedKeywordCount} of {testKeywords.length}</span>
+                  <span className="text-[11px] text-[#627D98]">Match:</span>
+                  <span
+                    className={`text-xl font-black tabular-nums ${
+                      currentScore >= 80 ? 'text-blue-core' : 'text-[#1D4ED8]'
+                    }`}
+                  >
+                    {currentScore}%
+                  </span>
                 </div>
               </div>
 
@@ -145,9 +168,6 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
                     <button
                       key={k.name}
                       onClick={() => toggleKeyword(k.name)}
-                      type="button"
-                      aria-pressed={isPresent}
-                      aria-label={`${k.name}: ${isPresent ? 'included in the sample resume' : 'shown as an example gap'}`}
                       className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold transition-all duration-150 cursor-pointer flex items-center gap-1.5 border shadow-xs active:scale-95 ${
                         isPresent
                           ? 'bg-[#0B2545] text-white border-[#0B2545]'
@@ -160,14 +180,14 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
                         <AlertTriangle className="w-3 h-3 text-warning" />
                       )}
                       <span>{k.name}</span>
-                      <span className="text-[9px] opacity-80">{isPresent ? 'Found' : 'Review'}</span>
+                      <span className="font-mono text-[9px] opacity-80">+{k.weight}%</span>
                     </button>
                   );
                 })}
               </div>
 
               {/*
-                Interactive demo, not a live scan. The sample indicator below is derived from
+                Interactive demo, not a live scan. The score below is derived from
                 the chips you toggle here and has nothing to do with your real
                 documents. The workspace shows the actual engine output instead.
               */}
@@ -178,22 +198,24 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
                     Illustrative keyword coverage
                   </span>
                   <span className="font-mono font-bold text-blue-core">
-                    {selectedKeywordCount} of {testKeywords.length} sample terms selected
+                    Demo only — not an ATS prediction
                   </span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-line overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${
-                      'bg-[#28664F]'
+                      currentScore >= 80
+                        ? 'bg-gradient-to-r from-blue-mid to-blue-light'
+                        : 'bg-gradient-to-r from-[#1D4ED8] to-[#60A5FA]'
                     }`}
-                    style={{ width: `${(selectedKeywordCount / testKeywords.length) * 100}%` }}
+                    style={{ width: `${currentScore}%` }}
                   />
                 </div>
               </div>
             </div>
 
             <div className="pt-4 mt-5 border-t border-surface/80 flex items-center justify-between text-xs text-[#627D98]">
-              <span>Illustrative sample — real results use your documents</span>
+                  <span>Demo only — your score uses your own documents</span>
               <button
                 onClick={onScanClick}
                 className="font-bold text-[#1D4ED8] hover:text-blue-core flex items-center gap-1 cursor-pointer"
@@ -227,9 +249,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
                 {/* Switcher */}
                 <div className="flex items-center gap-1 bg-white/80 p-0.5 rounded-xl border border-[#8DA9C4]/35 shadow-xs">
                   <button
-                    type="button"
                     onClick={() => setBulletMode('raw')}
-                    aria-pressed={bulletMode === 'raw'}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-colors cursor-pointer ${
                       bulletMode === 'raw'
                         ? 'bg-[#0B2545] text-white'
@@ -239,9 +259,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
                     Raw
                   </button>
                   <button
-                    type="button"
                     onClick={() => setBulletMode('tailored')}
-                    aria-pressed={bulletMode === 'tailored'}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-colors cursor-pointer ${
                       bulletMode === 'tailored'
                         ? 'bg-gradient-to-r from-[#1D4ED8] to-[#2563EB] text-white shadow-xs'
@@ -256,20 +274,20 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
               {/* Bullet Comparison Display */}
               <div className="p-3.5 rounded-2xl bg-white/70 border border-[#8DA9C4]/30 space-y-2 mb-3 shadow-inner">
                 <div className="text-[10px] font-mono text-[#627D98] flex items-center justify-between">
-                  <span>{bulletMode === 'raw' ? 'Original note' : 'Structured suggestion'}</span>
+                  <span>{bulletMode === 'raw' ? 'Uncalibrated' : 'Google STAR Formula'}</span>
                   <span
                     className={`font-bold ${
                       bulletMode === 'raw' ? 'text-warning' : 'text-blue-core'
                     }`}
                   >
-                    {bulletMode === 'raw' ? 'Source text' : 'No new facts added'}
+                    {bulletMode === 'raw' ? 'Vague Metric' : '+38% Latency Gain'}
                   </span>
                 </div>
 
                 <p className="text-[11px] sm:text-xs text-[#0B2545] leading-relaxed font-mono">
                   {bulletMode === 'raw'
                     ? 'Built internal payment microservices in Node and fixed slow queries for the backend team.'
-                    : 'Built internal payment services in Node.js and partnered with the backend team to investigate slow database queries.'}
+                    : 'Architected idempotent payment microservices in TypeScript, reducing p99 latency by 38% under 99.99% SLAs.'}
                 </p>
               </div>
 
@@ -324,9 +342,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
                 {(['direct', 'technical', 'growth'] as const).map((tone) => (
                   <button
                     key={tone}
-                      type="button"
                     onClick={() => setLetterTone(tone)}
-                      aria-pressed={letterTone === tone}
                     className={`px-3 py-1 rounded-xl text-[11px] font-semibold transition-all cursor-pointer capitalize border shadow-2xs ${
                       letterTone === tone
                         ? 'bg-[#0B2545] text-white border-[#0B2545]'
@@ -384,9 +400,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
                   {(['all', 'interview', 'offers'] as const).map((filter) => (
                     <button
                       key={filter}
-                      type="button"
                       onClick={() => setTrackerFilter(filter)}
-                      aria-pressed={trackerFilter === filter}
                       className={`px-2.5 py-1 rounded-lg text-[10px] font-bold capitalize transition-colors cursor-pointer ${
                         trackerFilter === filter
                           ? 'bg-[#0B2545] text-white'
@@ -423,7 +437,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
 
                     <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 w-full sm:w-auto pt-1 sm:pt-0 border-t sm:border-t-0 border-surface">
                       <span className="font-mono text-xs font-bold text-[#1D4ED8]">
-                          <span className="text-[10px] font-semibold text-[#63766D]">Example</span>
+                        {app.matchScore}%
                       </span>
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] border ${app.statusClass}`}>
                         {app.status}
@@ -440,7 +454,7 @@ export const CapabilitiesBento: React.FC<CapabilitiesBentoProps> = ({ onScanClic
                 onClick={onScanClick}
                 className="font-bold text-[#1D4ED8] hover:text-blue-core flex items-center gap-1 cursor-pointer"
               >
-                <span>Open workspace</span>
+                <span>Open Tracker</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>

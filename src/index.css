@@ -20,10 +20,10 @@
  */
 @theme {
   /* --- Brand core ------------------------------------------------------ */
-  --color-corporate-cloud: #f6f4ee;
-  --color-corporate-navy: #1a342e;
-  --color-corporate-blue: #28664f;
-  --color-corporate-steel: #a9b8ad;
+  --color-corporate-cloud: #f7f9fc;
+  --color-corporate-navy: #0b2545;
+  --color-corporate-blue: #1d4ed8;
+  --color-corporate-steel: #8da9c4;
 
   /*
    * Neutrals.
@@ -33,45 +33,45 @@
    * `text-text-primary` / `border-border-subtle` that a literal
    * `--color-text-primary` would generate.
    */
-  --color-canvas: #f6f4ee;
-  --color-surface-base: #fffefa;
-  --color-surface: #efeee7;
-  --color-surface-navy: #1a342e;
+  --color-canvas: #f7f9fc;
+  --color-surface-base: #ffffff;
+  --color-surface: #f0f4f8;
+  --color-surface-navy: #0b2545;
 
-  --color-ink: #1a342e;
-  --color-ink-soft: #4c6259;
-  --color-ink-faint: #63766d;
+  --color-ink: #0b2545;
+  --color-ink-soft: #334e68;
+  --color-ink-faint: #627d98;
 
-  --color-line: #dfe3da;
-  --color-line-strong: #c6d0c5;
-  --color-line-steel: #a9b8ad;
+  --color-line: #e2e8f0;
+  --color-line-strong: #cbd5e1;
+  --color-line-steel: #8da9c4;
 
   /* Legacy aliases kept so older references keep resolving. */
-  --color-text-primary: #1a342e;
-  --color-text-secondary: #4c6259;
-  --color-text-muted: #63766d;
-  --color-border-subtle: #dfe3da;
-  --color-border-steel: #a9b8ad;
-  --color-border-strong: #c6d0c5;
-  --color-surface-muted: #efeee7;
-  --color-accent-primary: #28664f;
-  --color-accent-blue: #28664f;
-  --color-accent-steel: #a9b8ad;
-  --color-accent-amber: #b96643;
+  --color-text-primary: #0b2545;
+  --color-text-secondary: #334e68;
+  --color-text-muted: #627d98;
+  --color-border-subtle: #e2e8f0;
+  --color-border-steel: #8da9c4;
+  --color-border-strong: #cbd5e1;
+  --color-surface-muted: #f0f4f8;
+  --color-accent-primary: #0b2545;
+  --color-accent-blue: #1d4ed8;
+  --color-accent-steel: #8da9c4;
+  --color-accent-amber: #d97706;
 
   /*
    * Blue ramp. The hero headline, primary buttons and progress bars all gradient
    * through these, so the ramp lives here instead of being re-typed per file.
    */
-  --color-blue-ink: #1a342e;
-  --color-blue-deep: #1f523f;
-  --color-blue-core: #28664f;
-  --color-blue-mid: #34765d;
-  --color-blue-bright: #4b8a69;
-  --color-blue-light: #91b29a;
-  --color-blue-pale: #bdcfbf;
-  --color-blue-wash: #e6eee5;
-  --color-blue-mist: #f1f4ec;
+  --color-blue-ink: #0b2545;
+  --color-blue-deep: #1e40af;
+  --color-blue-core: #1d4ed8;
+  --color-blue-mid: #2563eb;
+  --color-blue-bright: #3b82f6;
+  --color-blue-light: #60a5fa;
+  --color-blue-pale: #93c5fd;
+  --color-blue-wash: #dbeafe;
+  --color-blue-mist: #eff5fc;
 
   /*
    * Semantic states. Previously these were raw Tailwind shades (amber-500,
@@ -79,23 +79,23 @@
    * different oranges depending on the component. Anything that renders a
    * pass/warn/fail/pending state must use these.
    */
-  --color-success: #28664f;
-  --color-success-soft: #edf4ed;
-  --color-success-border: #b9d2bd;
+  --color-success: #047857;
+  --color-success-soft: #ecfdf5;
+  --color-success-border: #a7f3d0;
 
-  --color-warning: #9b5c1f;
-  --color-warning-strong: #74441b;
-  --color-warning-soft: #fbf3e7;
-  --color-warning-border: #ead1a8;
+  --color-warning: #b45309;
+  --color-warning-strong: #92400e;
+  --color-warning-soft: #fffbeb;
+  --color-warning-border: #fde68a;
 
-  --color-danger: #a24439;
-  --color-danger-strong: #84382f;
-  --color-danger-soft: #faeeeb;
-  --color-danger-border: #e7c4bc;
+  --color-danger: #be123c;
+  --color-danger-strong: #9f1239;
+  --color-danger-soft: #fff1f2;
+  --color-danger-border: #fecdd3;
 
-  --color-gap: #28664f;
-  --color-gap-soft: #edf4ed;
-  --color-gap-border: #b9d2bd;
+  --color-gap: #1d4ed8;
+  --color-gap-soft: #eff6ff;
+  --color-gap-border: #bfdbfe;
 
   /* --- Type ------------------------------------------------------------ */
   --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
@@ -290,20 +290,24 @@
 
 /* Frosted card used for every panel, card and section block. */
 .surface-panel {
-  background: #fffefa;
-  border: 1px solid var(--color-line);
+  background: rgb(255 255 255 / 55%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgb(255 255 255 / 80%);
   box-shadow:
-    0 14px 30px -22px rgb(26 52 46 / 30%),
-    inset 0 1px 0 rgb(255 255 255 / 90%);
+    0 12px 32px -8px rgb(11 37 69 / 8%),
+    inset 0 1px 0 rgb(255 255 255 / 95%);
 }
 
 /* Slightly denser variant for content-dense cards. */
 .surface-panel-strong {
-  background: #fffefa;
-  border: 1px solid var(--color-line);
+  background: rgb(255 255 255 / 70%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgb(255 255 255 / 85%);
   box-shadow:
-    0 18px 36px -24px rgb(26 52 46 / 32%),
-    inset 0 1px 0 rgb(255 255 255 / 90%);
+    0 20px 50px -12px rgb(11 37 69 / 14%),
+    inset 0 1px 0 rgb(255 255 255 / 95%);
 }
 
 /*
@@ -371,169 +375,21 @@
 }
 
 /*
+ * Blueprint grid texture. Used by the hero bridge graphic and the interactive
+ * background so the grid pitch and colour are identical everywhere.
+ */
+.blueprint-grid {
+  background-image:
+    linear-gradient(to right, rgb(141 169 196 / 35%) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(141 169 196 / 35%) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/*
  * Keyboard focus is handled globally in @layer base. This class is for the rare
  * case where a control needs the ring without the 2px offset (inline controls
  * inside a bordered row).
  */
 .focus-ring-inset:focus-visible {
   outline-offset: -2px;
-}
-
-/* ResumeSetu's shared visual language: warm paper, ink, and evergreen. */
-:root {
-  color-scheme: light;
-  --rs-paper: #f6f4ee;
-  --rs-surface: #fffefa;
-  --rs-ink: #1a342e;
-  --rs-muted: #4c6259;
-  --rs-faint: #63766d;
-  --rs-line: #dfe3da;
-  --rs-green: #28664f;
-  --rs-green-deep: #1f523f;
-  --rs-sage: #e6eee5;
-  --rs-clay: #b96643;
-  accent-color: var(--rs-green);
-  scrollbar-color: #a9b8ad var(--rs-paper);
-}
-
-body {
-  background: var(--rs-paper);
-}
-
-.app-shell {
-  background: var(--rs-paper);
-  color: var(--rs-ink);
-}
-
-/* Older screens used literal blue and slate utilities. Keep their layout while
-   routing those roles through the new shared palette. */
-.app-shell [class*="text-[#0B2545]"],
-.app-shell [class*="text-[#102A49]"],
-.app-shell [class*="text-[#173B36]"] {
-  color: var(--rs-ink) !important;
-}
-
-.app-shell [class*="text-[#334E68]"],
-.app-shell [class*="text-[#4C625B]"],
-.app-shell [class*="text-[#627D98]"],
-.app-shell [class*="text-[#8DA9C4]"] {
-  color: var(--rs-muted) !important;
-}
-
-.app-shell [class*="text-[#1D4ED8]"],
-.app-shell [class*="text-[#2563EB]"],
-.app-shell [class*="text-blue-core"],
-.app-shell [class*="text-blue-mid"],
-.app-shell [class*="text-blue-deep"] {
-  color: var(--rs-green) !important;
-}
-
-.app-shell [class*="bg-[#F7F9FC]"],
-.app-shell [class*="bg-[#F7F7F3]"],
-.app-shell [class*="bg-[#FCFCF9]"] {
-  background-color: var(--rs-paper) !important;
-}
-
-.app-shell [class*="bg-[#F0F4F8]"],
-.app-shell [class*="bg-[#E2E8F0]"],
-.app-shell [class*="bg-blue-wash"] {
-  background-color: var(--rs-sage) !important;
-}
-
-.app-shell [class*="bg-[#0B2545]"],
-.app-shell [class*="bg-[#173B36]"] {
-  background-color: var(--rs-ink) !important;
-}
-
-.app-shell [class*="bg-[#1D4ED8]"],
-.app-shell [class*="bg-[#2563EB]"],
-.app-shell [class*="bg-[#3B82F6]"],
-.app-shell [class*="bg-gradient-to-r"][class*="text-white"] {
-  background-color: var(--rs-green) !important;
-  background-image: none !important;
-}
-
-.app-shell [class*="border-[#E2E8F0]"],
-.app-shell [class*="border-[#CBD5E1]"],
-.app-shell [class*="border-[#8DA9C4]"],
-.app-shell [class*="border-blue-pale"] {
-  border-color: var(--rs-line) !important;
-}
-
-.app-shell [class*="ring-[#1D4ED8]"] {
-  --tw-ring-color: #7ca58b !important;
-}
-
-.app-shell .surface-panel,
-.app-shell .surface-panel-strong,
-.app-shell .glass-panel {
-  background: var(--rs-surface);
-  border-color: var(--rs-line);
-  box-shadow: 0 14px 32px -24px rgb(26 52 46 / 32%);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-.app-shell button:not(:disabled) {
-  transition-timing-function: cubic-bezier(0.2, 0.75, 0.25, 1);
-}
-
-.app-shell button:disabled {
-  cursor: not-allowed;
-}
-
-.app-shell :focus-visible {
-  outline-color: var(--rs-green);
-}
-
-.landing-page section {
-  border-color: var(--rs-line);
-}
-
-.landing-page .landing-card {
-  border-radius: 1.25rem;
-  box-shadow: 0 18px 36px -30px rgb(26 52 46 / 45%), 0 1px 0 rgb(255 255 255 / 90%) inset;
-}
-
-.landing-page.reveal-ready [data-reveal] {
-  opacity: 0;
-  transform: translate3d(0, 18px, 0);
-  transition:
-    opacity 560ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 680ms cubic-bezier(0.16, 1, 0.3, 1);
-  transition-delay: var(--reveal-delay, 0ms);
-}
-
-.landing-page.reveal-ready [data-reveal][data-revealed="true"] {
-  opacity: 1;
-  transform: translate3d(0, 0, 0);
-}
-
-.landing-page .hero-ambient {
-  will-change: transform;
-}
-
-@supports (animation-timeline: scroll()) {
-  @keyframes resume-hero-parallax {
-    to { transform: translate3d(0, 12%, 0); }
-  }
-
-  .landing-page .hero-ambient {
-    animation: resume-hero-parallax linear both;
-    animation-timeline: scroll(root block);
-    animation-range: 0 70vh;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .landing-page.reveal-ready [data-reveal] {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-
-  .landing-page .hero-ambient {
-    animation: none;
-    will-change: auto;
-  }
 }

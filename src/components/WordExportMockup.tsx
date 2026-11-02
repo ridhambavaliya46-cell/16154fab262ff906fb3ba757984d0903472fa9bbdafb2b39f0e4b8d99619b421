@@ -35,11 +35,12 @@ export const WordExportMockup: React.FC<{ onScanClick?: () => void }> = ({ onSca
             What You Download
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-ink">
-            A clear, single-column Word document
+            The Single-Column Document Parsers Read Cleanly
           </h2>
           <p className="mt-3 text-sm sm:text-base text-ink-soft leading-relaxed">
-            Exports use a straightforward reading order with standard headings and editable text.
-            This preview explains the layout; third-party parser compatibility has not been tested.
+            Multi-column layouts, text boxes and tables break at the moment an applicant-tracking
+            system flattens your file. Every export is built the plain way on purpose — toggle the
+            parse view to see why.
           </p>
         </div>
 
@@ -48,10 +49,6 @@ export const WordExportMockup: React.FC<{ onScanClick?: () => void }> = ({ onSca
           <div className="relative">
             <div className="absolute -inset-3 rounded-[28px] bg-gradient-to-br from-blue-wash via-canvas to-white border border-line/60" aria-hidden="true" />
             <div className="relative bg-white rounded-2xl border border-line shadow-[0_24px_60px_-18px_rgba(11,37,69,0.25)] overflow-hidden">
-              <div className="absolute right-4 top-14 z-10 rounded-full border border-line bg-canvas px-2.5 py-1 text-[10px] font-semibold text-ink-soft shadow-sm">
-                Illustrative sample resume
-              </div>
-
               {/* Window bar */}
               <div className="flex items-center justify-between px-4 py-2.5 border-b border-line/70 bg-canvas/80">
                 <div className="flex items-center gap-2">
@@ -70,7 +67,7 @@ export const WordExportMockup: React.FC<{ onScanClick?: () => void }> = ({ onSca
                   }`}
                 >
                   <ScanLine className="w-3 h-3" />
-                  {parseView ? 'Reading order view' : 'Clean view'}
+                  {parseView ? 'Parse view on' : 'Clean view'}
                 </span>
               </div>
 
@@ -96,8 +93,8 @@ export const WordExportMockup: React.FC<{ onScanClick?: () => void }> = ({ onSca
                   </div>
                   <ul className="space-y-1 text-[11px] text-ink-soft leading-relaxed list-disc pl-4">
                     <li>
-                      Built payment services in TypeScript and worked with the team to improve
-                      request handling.
+                      Architected idempotent payment microservices in TypeScript, cutting p99
+                      latency by 38% under 99.99% availability SLAs.
                     </li>
                     <li>
                       Led PostgreSQL indexing programme that removed the checkout service's two
@@ -119,9 +116,9 @@ export const WordExportMockup: React.FC<{ onScanClick?: () => void }> = ({ onSca
                 {parseView && (
                   <div className="absolute inset-x-5 sm:inset-x-7 bottom-4 space-y-1.5 pointer-events-none">
                     {[
-                      { top: '18%', label: 'Single column — clear reading order' },
-                      { top: '46%', label: 'Standard section heading' },
-                      { top: '72%', label: 'Editable bullet list' },
+                      { top: '18%', label: 'Single column — flattens in reading order' },
+                      { top: '46%', label: 'Standard heading, not a text box' },
+                      { top: '72%', label: 'Real bullet list — no tables to mis-join' },
                     ].map((note) => (
                       <div
                         key={note.label}
@@ -144,7 +141,7 @@ export const WordExportMockup: React.FC<{ onScanClick?: () => void }> = ({ onSca
               aria-pressed={parseView}
             >
               <Columns className="w-3.5 h-3.5 text-blue-core" />
-              {parseView ? 'Hide layout notes' : 'Show layout notes'}
+              {parseView ? 'Hide parse annotations' : 'Show parse annotations'}
             </button>
           </div>
 
@@ -163,8 +160,8 @@ export const WordExportMockup: React.FC<{ onScanClick?: () => void }> = ({ onSca
             <ul className="space-y-3 text-xs text-ink-soft">
               {[
                 {
-                    title: 'Single-column .docx',
-                    body: 'One flowing column with standard headings and editable text. Third-party parser compatibility is not tested.',
+                  title: 'Single-column .docx',
+                  body: 'One flowing column, standard headings, no tables or text boxes — the layout most parsers keep intact.',
                 },
                 {
                   title: 'Keyword-aligned rewrite',
